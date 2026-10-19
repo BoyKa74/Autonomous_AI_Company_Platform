@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# media stack (engine tải về máy, secrets, build local)
+services/engines/
+services/**/.env
+services/worker/node_modules/
+services/windows/*.cmd.local

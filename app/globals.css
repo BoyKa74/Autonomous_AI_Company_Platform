@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
+@theme {
+  /* Nền văn phòng sáng */
+  --color-ink-950: #ffffff;
+  --color-ink-900: #f4f6f9;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #edf1f6;
+  --color-ink-700: #e2e7ee;
+  --color-ink-600: #d2d9e3;
+  --color-ink-500: #b6c0cf;
+
+  /* Chữ */
+  --color-fog-100: #1b2330;
+  --color-fog-300: #3d4859;
+  --color-fog-500: #65718a;
+  --color-fog-600: #8b95a7;
+
+  /* Tín hiệu amber */
+  --color-signal-300: #f0b95a;
+  --color-signal-400: #e09a26;
+  --color-signal-500: #cd8615;
+  --color-signal-600: #9c650c;
+
+  /* Trạng thái */
+  --color-ok-400: #18855a;
+  --color-warn-400: #b07d10;
+  --color-bad-400: #cf3f45;
+  --color-info-400: #2f6fd6;
+
+  --font-display: var(--font-archivo);
+  --font-sans: var(--font-be-vietnam);
+  --font-mono: var(--font-plex-mono);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink-900);
+  color: var(--color-fog-100);
+}
+
+::selection {
+  background: var(--color-signal-400);
+  color: #241503;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-500) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes tally-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  50% {
+    opacity: 0.65;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+.tally-live {
+  animation: tally-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.35s ease-out both;
 }
