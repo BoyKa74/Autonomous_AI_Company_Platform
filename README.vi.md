@@ -365,7 +365,27 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Thêm template công ty Phim, Kế toán và Phần mềm/Code.
 - Thêm test tự động cho task lifecycle và budget guard.
 
+## Đóng góp
+
+Đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết cách cài đặt, các bước kiểm tra
+và checklist pull request. PR nhỏ, tập trung một vấn đề sẽ dễ review hơn.
+
+## Bảo mật
+
+Vui lòng báo lỗ hổng bảo mật riêng qua GitHub Security Advisories. Xem
+[SECURITY.md](SECURITY.md) để biết phạm vi và quy trình xử lý.
+
 ## License
 
 Phát hành theo [MIT License](LICENSE). Các thành phần/skill bên thứ ba giữ
 license và attribution riêng.
+
+## Contributors
+
+Cảm ơn mọi người đã đóng góp cho Autonomous AI Company Platform.
+
+<p align="center">
+  <a href="https://github.com/BoyKa74/Autonomous_AI_Company_Platform/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=BoyKa74/Autonomous_AI_Company_Platform" alt="Contributors" />
+  </a>
+</p>

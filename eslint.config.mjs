@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored agent skills keep their own lint configuration.
+    ".agents/**",
+    ".opencode/**",
   ]),
 ]);
 

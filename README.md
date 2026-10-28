@@ -375,7 +375,27 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Add company templates for Film, Accounting and Software/Code teams.
 - Add automated tests for the task lifecycle and budget guard.
 
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the checks to run, and the
+pull request checklist. Small, focused PRs are easiest to review.
+
+## Security
+
+Please report vulnerabilities privately through GitHub Security Advisories. See
+[SECURITY.md](SECURITY.md) for scope and handling.
+
 ## License
 
 Released under the [MIT License](LICENSE). Third-party components and skills
 retain their own licenses and attributions.
+
+## Contributors
+
+Thanks to everyone who has helped build Autonomous AI Company Platform.
+
+<p align="center">
+  <a href="https://github.com/BoyKa74/Autonomous_AI_Company_Platform/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=BoyKa74/Autonomous_AI_Company_Platform" alt="Contributors" />
+  </a>
+</p>
