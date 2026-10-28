@@ -3,6 +3,8 @@ import { Archivo, Be_Vietnam_Pro, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { getLocale } from "@/lib/i18n/server";
 
+export const instant = false;
+
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin", "vietnamese"],

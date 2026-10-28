@@ -4,6 +4,7 @@ import { RegisterForm } from "./register-form";
 import { Panel } from "@/components/ui/kit";
 
 export const metadata: Metadata = { title: "Create account" };
+export const instant = false;
 
 export default function RegisterPage() {
   return (
