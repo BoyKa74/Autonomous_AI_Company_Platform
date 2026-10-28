@@ -12,9 +12,12 @@
 
   /* Chữ */
   --color-fog-100: #1b2330;
+  --color-fog-200: #2f3a4b;
   --color-fog-300: #3d4859;
+  --color-fog-400: #4f5b6e;
   --color-fog-500: #65718a;
   --color-fog-600: #8b95a7;
+  --color-fog-700: #a6b0bf;
 
   /* Tín hiệu amber */
   --color-signal-300: #f0b95a;
@@ -96,4 +99,31 @@ body {
 
 .rise-in {
   animation: rise-in 0.35s ease-out both;
+}
+
+/* Dark island for the Multi-Agent Workspace (2D) */
+.workspace-dark {
+  color-scheme: dark;
+  --color-ink-950: #080c12;
+  --color-ink-900: #0b1118;
+  --color-ink-850: #111922;
+  --color-ink-800: #16212d;
+  --color-ink-700: #243241;
+  --color-ink-600: #334456;
+  --color-ink-500: #506176;
+  --color-fog-100: #e8eef6;
+  --color-fog-200: #d4deea;
+  --color-fog-300: #b6c2d1;
+  --color-fog-400: #94a3b8;
+  --color-fog-500: #8190a3;
+  --color-fog-600: #647286;
+  --color-fog-700: #4a5a6d;
+  --color-signal-300: #f4ca7a;
+  --color-signal-400: #f0b95a;
+  --color-signal-500: #e8b64b;
+  --color-signal-600: #c28a22;
+  --color-ok-400: #4cc38a;
+  --color-warn-400: #e8b64b;
+  --color-bad-400: #ea6a6a;
+  --color-info-400: #6aa8ff;
 }

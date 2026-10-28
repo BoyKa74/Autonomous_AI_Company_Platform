@@ -1,6 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAiSettings, monthStartIso } from "@/lib/ai/budget";
 import type {
+  AgentPerformanceLog,
+  ExpenseEntry,
+  KnowledgeCategory,
+  KnowledgeDoc,
+  CompanyReport,
+  PlatformAccount,
+  PlatformMetric,
+  RevenueEntry,
+  RevenuePlan,
   AgentTask,
   AiAgent,
   AiSettings,
@@ -298,4 +307,195 @@ export async function listRecentLedger(limit = 12) {
     company: { name: string } | null;
     agent: { name: string } | null;
   })[];
+}
+
+export async function listKnowledgeDocs(filters: {
+  category?: string;
+  q?: string;
+} = {}): Promise<KnowledgeDoc[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("knowledge_docs")
+    .select("*")
+    .order("pinned", { ascending: false })
+    .order("updated_at", { ascending: false });
+
+  if (filters.category && filters.category !== "all") {
+    query = query.eq("category", filters.category as KnowledgeCategory);
+  }
+  if (filters.q) {
+    const safe = filters.q.replace(/[(),]/g, " ").trim();
+    if (safe) {
+      query = query.or(`title.ilike.%${safe}%,content.ilike.%${safe}%`);
+    }
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getKnowledgeDoc(id: string): Promise<KnowledgeDoc | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("knowledge_docs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function listPerformanceLog(companyId: string, limit = 10) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agent_performance_log")
+    .select("*, agent:ai_agents(name, role)")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as (AgentPerformanceLog & {
+    agent: { name: string; role: AiAgent["role"] } | null;
+  })[];
+}
+
+export function currentMonthBounds() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0));
+  const label = new Intl.DateTimeFormat("vi-VN", {
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+    label,
+  };
+}
+
+export async function listRevenueEntries(
+  companyId: string,
+  start: string,
+  end: string
+): Promise<(RevenueEntry & { channel: { name: string } | null })[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("revenue_entries")
+    .select("*, channel:channels(name)")
+    .eq("company_id", companyId)
+    .gte("occurred_on", start)
+    .lte("occurred_on", end)
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as (RevenueEntry & { channel: { name: string } | null })[];
+}
+
+export async function listExpenseEntries(
+  companyId: string,
+  start: string,
+  end: string
+): Promise<ExpenseEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("expense_entries")
+    .select("*")
+    .eq("company_id", companyId)
+    .gte("occurred_on", start)
+    .lte("occurred_on", end)
+    .order("occurred_on", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getRevenuePlan(
+  companyId: string
+): Promise<RevenuePlan | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("revenue_plans")
+    .select("*")
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export type SafePlatformAccount = Omit<
+  PlatformAccount,
+  "access_token_enc" | "refresh_token_enc"
+>;
+
+export async function listPlatformAccounts(): Promise<SafePlatformAccount[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("platform_accounts")
+    .select(
+      "id, owner_id, company_id, platform, account_id, account_name, token_expires_at, refresh_expires_at, scopes, status, last_synced_at, metadata, created_at, updated_at"
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as SafePlatformAccount[];
+}
+
+export async function getLatestPlatformMetrics(
+  accountIds: string[]
+): Promise<Record<string, PlatformMetric>> {
+  if (accountIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("platform_metrics")
+    .select("*")
+    .in("platform_account_id", accountIds)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(error.message);
+
+  const latest: Record<string, PlatformMetric> = {};
+  for (const metric of data ?? []) {
+    if (!latest[metric.platform_account_id]) {
+      latest[metric.platform_account_id] = metric;
+    }
+  }
+  return latest;
+}
+
+export async function listAgentCompanyCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ai_agents")
+    .select("company_id");
+
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.company_id] = (counts[row.company_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export async function listCompanyReports(
+  companyId: string,
+  limit = 3
+): Promise<CompanyReport[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("company_reports")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }

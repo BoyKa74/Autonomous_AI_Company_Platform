@@ -1,4 +1,10 @@
-export type AiProviderName = "openai" | "anthropic" | "google" | "openrouter";
+export type AiProviderName =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "groq"
+  | "opencode"
+  | "openrouter";
 
 export type AiTask = "script" | "book" | "caption" | "strategy" | "general";
 

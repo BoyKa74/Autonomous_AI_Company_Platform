@@ -1,0 +1,71 @@
+{
+  "product": "Example SaaS A",
+  "duration_sec": 30,
+  "aspect_ratio": "9:16",
+  "hook_sec": 3,
+  "hook": "Team bạn có đang mất 2 giờ mỗi tuần để gom việc?",
+  "shots": [
+    {
+      "start": 0,
+      "end": 3,
+      "visual": "Màn hình điện thoại với 5 tab công việc đang mở",
+      "voiceover": "Team bạn có đang mất 2 giờ mỗi tuần để gom việc?",
+      "on_screen_text": "Mất 2 giờ/tuần?"
+    },
+    {
+      "start": 3,
+      "end": 7,
+      "visual": "Dashboard Example SaaS A với bảng công việc gọn",
+      "voiceover": "Example SaaS A gom việc, người phụ trách và hạn chót vào một bảng.",
+      "on_screen_text": "Một bảng duy nhất"
+    },
+    {
+      "start": 7,
+      "end": 11,
+      "visual": "Thao tác tạo việc và gán người trong vài giây",
+      "voiceover": "Tạo việc, gán người và đặt hạn chỉ trong vài thao tác.",
+      "on_screen_text": "Tạo việc trong vài giây"
+    },
+    {
+      "start": 11,
+      "end": 15,
+      "visual": "Luồng phê duyệt với trạng thái rõ ràng",
+      "voiceover": "Luồng phê duyệt rõ ràng giúp quản lý biết việc nào đang chờ.",
+      "on_screen_text": "Duyệt việc rõ ràng"
+    },
+    {
+      "start": 15,
+      "end": 19,
+      "visual": "Báo cáo tiến độ theo tuần",
+      "voiceover": "Báo cáo tiến độ đủ để nhìn nhanh, không cần xuất bảng tính thủ công.",
+      "on_screen_text": "Báo cáo trong 1 phút"
+    },
+    {
+      "start": 19,
+      "end": 23,
+      "visual": "Bảng giá gói khởi điểm 49 USD/tháng",
+      "voiceover": "Gói khởi điểm 49 USD mỗi tháng; kiểm tra lại giá trước khi mua.",
+      "on_screen_text": "Từ 49 USD/tháng"
+    },
+    {
+      "start": 23,
+      "end": 27,
+      "visual": "Màn hình so sánh nhanh ưu và nhược điểm",
+      "voiceover": "Phù hợp team nhỏ cần quản lý việc gọn; không thay thế hệ thống tài chính.",
+      "on_screen_text": "Phù hợp team nhỏ"
+    },
+    {
+      "start": 27,
+      "end": 30,
+      "visual": "Nút dùng thử và dòng disclosure",
+      "voiceover": "Đây là liên kết tiếp thị. Bạn có thể dùng thử Example SaaS A qua link trong mô tả.",
+      "on_screen_text": "Dùng thử qua link"
+    }
+  ],
+  "disclosure": "Affiliate disclosure: Video có chứa liên kết tiếp thị; tôi có thể nhận hoa hồng.",
+  "cta": "Dùng thử Example SaaS A qua link trong mô tả.",
+  "sources": [
+    "https://vendor.example/program",
+    "https://review.example/example-saas-a"
+  ]
+}

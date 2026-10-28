@@ -12,8 +12,6 @@ const FONT_SEMIBOLD = "/fonts/BeVietnamPro-SemiBold.ttf";
 const FONT_REGULAR = "/fonts/BeVietnamPro-Regular.ttf";
 
 const X_SPACING = 3.0;
-const ROW_Z = 3.4;
-const WALL_OFFSET = 3.8;
 const WALL_HEIGHT = 6.4;
 
 type Theme = {
@@ -61,85 +59,133 @@ const DARK: Theme = {
   leafC: "#387456",
 };
 
+type FloorInfo = {
+  tier: number;
+  y: number;
+  z: number;
+  width: number;
+  count: number;
+  depth: number;
+};
+
 type Layout = {
-  positioned: { agent: AiAgent; position: [number, number, number]; depth: number }[];
+  positioned: { agent: AiAgent; position: [number, number, number]; tier: number }[];
+  floors: FloorInfo[];
+  centerY: number;
   centerZ: number;
   backZ: number;
   minX: number;
   maxX: number;
-  maxDepth: number;
+  maxTierIndex: number;
+};
+
+const FLOOR_HEIGHT = 0.95;
+const FLOOR_DEPTH_Z = 4.1;
+const SUB_ROW_DEPTH = 1.8;
+const MAX_PER_ROW = 6;
+const ROLE_WEIGHT: Record<AiAgent["role"], number> = {
+  super_admin: 0,
+  ceo: 1,
+  manager: 2,
+  specialist: 3,
+  worker: 4,
 };
 
 function computeLayout(agents: AiAgent[]): Layout {
-  const byId = new Map(agents.map((agent) => [agent.id, agent]));
-  const childrenOf = new Map<string, AiAgent[]>();
-  const roots: AiAgent[] = [];
-
+  const byTier = new Map<number, AiAgent[]>();
   for (const agent of agents) {
-    if (agent.parent_id && byId.has(agent.parent_id)) {
-      const list = childrenOf.get(agent.parent_id) ?? [];
-      list.push(agent);
-      childrenOf.set(agent.parent_id, list);
-    } else {
-      roots.push(agent);
-    }
+    const tier = Math.min(5, Math.max(1, agent.tier));
+    const list = byTier.get(tier) ?? [];
+    list.push(agent);
+    byTier.set(tier, list);
   }
 
-  const slots = new Map<string, { x: number; depth: number }>();
-  let cursor = 0;
+  const tiers = [...byTier.keys()].sort((a, b) => a - b);
+  const floors: FloorInfo[] = [];
+  const positioned: Layout["positioned"] = [];
+  let halfWidth = 0;
+  let maxRows = 1;
 
-  const walk = (agent: AiAgent, depth: number): number => {
-    const children = childrenOf.get(agent.id) ?? [];
-    let x: number;
-    if (children.length === 0) {
-      x = cursor * X_SPACING;
-      cursor += 1;
-    } else {
-      const xs = children.map((child) => walk(child, depth + 1));
-      x = (Math.min(...xs) + Math.max(...xs)) / 2;
+  tiers.forEach((tier, tierIndex) => {
+    const list = [...(byTier.get(tier) ?? [])].sort((a, b) => {
+      const weight = ROLE_WEIGHT[a.role] - ROLE_WEIGHT[b.role];
+      return weight !== 0 ? weight : a.created_at.localeCompare(b.created_at);
+    });
+
+    const y = tierIndex * FLOOR_HEIGHT;
+    const rows: AiAgent[][] = [];
+    for (let i = 0; i < list.length; i += MAX_PER_ROW) {
+      rows.push(list.slice(i, i + MAX_PER_ROW));
     }
-    slots.set(agent.id, { x, depth });
-    return x;
-  };
+    maxRows = Math.max(maxRows, rows.length);
 
-  for (const root of roots) {
-    walk(root, 0);
-    cursor += 1;
-  }
+    let rowWidthMax = 0;
+    rows.forEach((row, rowIndex) => {
+      const z = -tierIndex * FLOOR_DEPTH_Z - rowIndex * SUB_ROW_DEPTH;
+      const rowWidth = Math.max(0, (row.length - 1) * X_SPACING);
+      rowWidthMax = Math.max(rowWidthMax, rowWidth);
+      halfWidth = Math.max(halfWidth, rowWidth / 2 + 1.2);
+      const startX = -rowWidth / 2;
+      row.forEach((agent, i) => {
+        positioned.push({
+          agent,
+          tier,
+          position: [startX + i * X_SPACING, y, z],
+        });
+      });
+    });
 
-  const all = [...slots.values()];
-  const xs = all.map((slot) => slot.x);
-  const centerX = xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0;
-  const maxDepth = all.length ? Math.max(...all.map((slot) => slot.depth)) : 0;
-
-  const positioned = agents.map((agent) => {
-    const slot = slots.get(agent.id) ?? { x: 0, depth: 0 };
-    const z = -(maxDepth - slot.depth) * ROW_Z;
-    return {
-      agent,
-      depth: slot.depth,
-      position: [slot.x - centerX, 0, z] as [number, number, number],
-    };
+    const depth = 3.7 + (rows.length - 1) * SUB_ROW_DEPTH;
+    floors.push({
+      tier,
+      y,
+      z: -tierIndex * FLOOR_DEPTH_Z - ((rows.length - 1) * SUB_ROW_DEPTH) / 2,
+      width: rowWidthMax + 2.8,
+      count: list.length,
+      depth,
+    });
   });
+
+  const maxTierIndex = Math.max(0, tiers.length - 1);
+  const deepestZ = maxTierIndex * FLOOR_DEPTH_Z + (maxRows - 1) * SUB_ROW_DEPTH;
 
   return {
     positioned,
-    centerZ: -(maxDepth * ROW_Z) / 2,
-    backZ: -(maxDepth * ROW_Z) - WALL_OFFSET,
-    minX: (Math.min(...xs) || 0) - centerX,
-    maxX: (Math.max(...xs) || 0) - centerX,
-    maxDepth,
+    floors,
+    centerY: (maxTierIndex * FLOOR_HEIGHT) / 2 + 0.8,
+    centerZ: -deepestZ / 2,
+    backZ: -deepestZ - 4.6,
+    minX: -halfWidth,
+    maxX: halfWidth,
+    maxTierIndex,
   };
 }
 
-function CameraRig({ centerZ, span }: { centerZ: number; span: number }) {
+function CameraRig({
+  centerY,
+  centerZ,
+  span,
+  tiers,
+  depth,
+}: {
+  centerY: number;
+  centerZ: number;
+  span: number;
+  tiers: number;
+  depth: number;
+}) {
   const { camera } = useThree();
 
   useEffect(() => {
-    const dist = Math.max(16.5, span * 0.85 + 10);
-    camera.position.set(3, dist * 0.52, centerZ + dist * 0.85);
-    camera.lookAt(0, 1.5, centerZ);
-  }, [camera, centerZ, span]);
+    const dist = Math.max(
+      17,
+      span * 0.75 + 10,
+      tiers * 4.2 + 11,
+      depth * 0.9 + 10
+    );
+    camera.position.set(3, centerY + dist * 0.42, centerZ + dist * 0.85);
+    camera.lookAt(0, centerY, centerZ);
+  }, [camera, centerY, centerZ, span, tiers, depth]);
 
   return null;
 }
@@ -215,6 +261,7 @@ function Room({
   maxX,
   theme,
   dark,
+  topY,
 }: {
   title: string;
   backZ: number;
@@ -223,10 +270,14 @@ function Room({
   maxX: number;
   theme: Theme;
   dark: boolean;
+  topY: number;
 }) {
   const width = Math.max(24, maxX - minX + 14);
   const floorCenterZ = (backZ + 8 + centerZ) / 2;
   const floorDepth = Math.abs(backZ) + 17;
+  const wallHeight = WALL_HEIGHT + topY * 0.85;
+  const bannerY = 4.55 + topY * 0.85;
+  const windowY = topY * 0.85;
 
   return (
     <>
@@ -252,18 +303,23 @@ function Room({
       />
 
       {/* tường sau + cửa sổ */}
-      <mesh position={[0, WALL_HEIGHT / 2, backZ]} receiveShadow>
-        <planeGeometry args={[width, WALL_HEIGHT]} />
+      <mesh position={[0, wallHeight / 2, backZ]} receiveShadow>
+        <planeGeometry args={[width, wallHeight]} />
         <meshStandardMaterial color={theme.wall} roughness={0.9} />
       </mesh>
-      <Windows width={width} position={[0, 0, backZ]} rotation={[0, 0, 0]} theme={theme} />
+      <Windows
+        width={width}
+        position={[0, windowY, backZ]}
+        rotation={[0, 0, 0]}
+        theme={theme}
+      />
       <mesh position={[0, 1.1, backZ + 0.05]}>
         <boxGeometry args={[width, 0.12, 0.03]} />
         <meshStandardMaterial color={theme.gridCell} roughness={0.8} />
       </mesh>
 
       {/* băng-rôn tên công ty */}
-      <group position={[0, 4.55, backZ + 0.09]}>
+      <group position={[0, bannerY, backZ + 0.09]}>
         <mesh>
           <boxGeometry args={[Math.min(width - 6, 7.2), 1.15, 0.06]} />
           <meshStandardMaterial
@@ -297,7 +353,7 @@ function Room({
 
       <Text
         font={FONT_REGULAR}
-        position={[0, 3.42, backZ + 0.09]}
+        position={[0, bannerY - 1.13, backZ + 0.09]}
         fontSize={0.2}
         letterSpacing={0.22}
         color={dark ? "#6d7a8c" : "#8b95a7"}
@@ -324,6 +380,7 @@ function Scene({
   title,
   dark,
   handoffs,
+  leaderId,
 }: {
   agents: AiAgent[];
   activeByAgent: Record<string, number>;
@@ -333,14 +390,14 @@ function Scene({
   title: string;
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
+  leaderId: string | null;
 }) {
-  const { positioned, centerZ, backZ, minX, maxX, maxDepth } = useMemo(
-    () => computeLayout(agents),
-    [agents]
-  );
+  const { positioned, floors, centerY, centerZ, backZ, minX, maxX, maxTierIndex } =
+    useMemo(() => computeLayout(agents), [agents]);
 
   const span = Math.max(Math.abs(minX), Math.abs(maxX)) * 2 + 6;
   const theme = dark ? DARK : LIGHT;
+  const topY = maxTierIndex * FLOOR_HEIGHT;
   const positionById = useMemo(
     () => new Map(positioned.map((entry) => [entry.agent.id, entry.position])),
     [positioned]
@@ -404,32 +461,44 @@ function Scene({
         maxX={maxX}
         theme={theme}
         dark={dark}
+        topY={topY}
       />
 
-      {/* bục CEO */}
-      {positioned
-        .filter(({ depth }) => depth === maxDepth && maxDepth > 0)
-        .map(({ agent, position }) => (
+      {/* tầng: mỗi tầng là một sàn nâng, tầng càng cao càng giỏi */}
+      {floors.map((floor) => (
+        <group key={`floor-${floor.tier}`}>
           <mesh
-            key={`platform-${agent.id}`}
-            position={[position[0], 0.16, position[2] - 0.4]}
+            position={[0, floor.y - 0.11, floor.z - 0.3]}
             receiveShadow
             castShadow
           >
-            <boxGeometry args={[2.9, 0.32, 3.1]} />
-            <meshStandardMaterial color={theme.platform} roughness={0.7} />
+            <boxGeometry args={[floor.width, 0.22, floor.depth]} />
+            <meshStandardMaterial color={theme.platform} roughness={0.72} />
           </mesh>
-        ))}
+          <mesh position={[0, floor.y - 0.02, floor.z + 1.55]}>
+            <boxGeometry args={[floor.width, 0.035, 0.035]} />
+            <meshStandardMaterial color="#cd8615" roughness={0.6} />
+          </mesh>
+          {floor.y > 0 &&
+            [-1, 1].map((side) => (
+              <mesh
+                key={side}
+                position={[side * (floor.width / 2 - 0.3), (floor.y - 0.2) / 2, floor.z - 1.4]}
+              >
+                <boxGeometry args={[0.14, Math.max(0.2, floor.y - 0.2), 0.14]} />
+                <meshStandardMaterial color={theme.gridSection} roughness={0.8} />
+              </mesh>
+            ))}
+        </group>
+      ))}
 
-      {positioned.map(({ agent, position, depth }) => (
+      {positioned.map(({ agent, position }) => (
         <Workstation
           key={agent.id}
           agent={agent}
-          position={
-            depth === maxDepth && maxDepth > 0
-              ? [position[0], 0.32, position[2]]
-              : position
-          }
+          position={position}
+          tier={agent.tier}
+          isLeader={leaderId === agent.id}
           active={(activeByAgent[agent.id] ?? 0) > 0}
           selected={selectedId === agent.id}
           onSelect={onSelect}
@@ -446,17 +515,23 @@ function Scene({
         return (
           <Courier
             key={`${handoff.fromId}-${handoff.toId}`}
-            from={{ x: from[0], z: from[2] }}
-            to={{ x: to[0], z: to[2] }}
+            from={{ x: from[0], y: from[1], z: from[2] }}
+            to={{ x: to[0], y: to[1], z: to[2] }}
             delay={index * 2.1}
             color={AGENT_ROLES[sender.role].color}
           />
         );
       })}
 
-      <CameraRig centerZ={centerZ} span={span} />
+      <CameraRig
+        centerY={centerY}
+        centerZ={centerZ}
+        span={span}
+        tiers={maxTierIndex + 1}
+        depth={Math.abs(backZ) - 4.6}
+      />
       <OrbitControls
-        target={[0, 0.9, centerZ]}
+        target={[0, centerY - 0.3, centerZ]}
         enablePan
         minDistance={6}
         maxDistance={42}
@@ -478,6 +553,7 @@ export function OrgCanvas(props: {
   title: string;
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
+  leaderId: string | null;
 }) {
   return (
     <Canvas

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/architecture-current-20261028/candidate.json",
+    "sha256": "49c7bcb0862a389823c831aa5e3b34f4cdb36d686f533b422e95ab0a89f68a5d",
+    "bytes": 4351
+  },
+  "artifact": {
+    "path": "/Users/maivananhvu/Company/VIC/Vic_affiliet/docs/architecture/current-ai-company.html",
+    "sha256": "c88d3c00e6c47b54f39a7410aaf90269ace0cfa858eac4a56e6ccca6858f5d59",
+    "bytes": 846919
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+      "subject": {
+        "diagramType": "architecture",
+        "path": "/meta/locale"
+      },
+      "evidence": {
+        "locale": "vi",
+        "bundledLocales": [
+          "en",
+          "zh-CN",
+          "zh-TW",
+          "es",
+          "ko",
+          "ar"
+        ]
+      },
+      "supportedFixes": [
+        "Supply meta.translations for this locale.",
+        "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/architecture-current-20261028/review-2/current-ai-company.finalize.json",
+    "summaryReceipt": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/architecture-current-20261028/review-2/current-ai-company.finalize-summary.json",
+    "browserCheckReceipt": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/architecture-current-20261028/review-2/current-ai-company.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-28T04:50:29.488Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1713,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

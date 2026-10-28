@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "1e20d9a6-bd39-46c3-8d8f-e348bbe442e9",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/architecture-current-en-20261028/candidate.json",
+  "output": "/Users/maivananhvu/Company/VIC/Vic_affiliet/docs/architecture/current-ai-company.en.html",
+  "specification": {
+    "sha256": "939120e06eba6a1b78afc5d175089c7e6dab03a41baa737f0696d6f47580dc82",
+    "bytes": 4842
+  },
+  "artifact": {
+    "sha256": "c88d3c00e6c47b54f39a7410aaf90269ace0cfa858eac4a56e6ccca6858f5d59",
+    "bytes": 846919
+  }
+}

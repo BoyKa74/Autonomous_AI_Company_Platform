@@ -1,9 +1,12 @@
 import {
   anthropicProvider,
   googleProvider,
+  groqProvider,
   openaiProvider,
+  opencodeProvider,
   openrouterProvider,
 } from "@/lib/ai/providers";
+import { isFreeOpencodeModel } from "@/lib/ai/free-models";
 import { computeCostUsd } from "@/lib/ai/pricing";
 import type {
   AiProviderName,
@@ -18,6 +21,8 @@ export const PROVIDERS: Record<AiProviderName, ProviderAdapter> = {
   openai: openaiProvider,
   anthropic: anthropicProvider,
   google: googleProvider,
+  groq: groqProvider,
+  opencode: opencodeProvider,
   openrouter: openrouterProvider,
 };
 
@@ -25,6 +30,8 @@ export const PROVIDER_LABELS: Record<AiProviderName, string> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google Gemini",
+  groq: "Groq",
+  opencode: "OpenCode Go",
   openrouter: "OpenRouter",
 };
 
@@ -38,19 +45,29 @@ export const TASK_LABELS: Record<AiTask, string> = {
 
 /** Provider mạnh nhất cho từng loại việc — router thử lần lượt theo thứ tự này. */
 const TASK_PREFERENCE: Record<AiTask, AiProviderName[]> = {
-  script: ["anthropic", "openai", "google", "openrouter"],
-  book: ["anthropic", "openai", "google", "openrouter"],
-  caption: ["google", "openai", "openrouter", "anthropic"],
-  strategy: ["openai", "anthropic", "google", "openrouter"],
-  general: ["openai", "anthropic", "google", "openrouter"],
+  script: ["anthropic", "openai", "google", "groq", "opencode", "openrouter"],
+  book: ["anthropic", "openai", "google", "groq", "opencode", "openrouter"],
+  caption: ["google", "groq", "openai", "openrouter", "anthropic"],
+  strategy: ["openai", "anthropic", "google", "groq", "opencode", "openrouter"],
+  general: ["openai", "anthropic", "google", "groq", "opencode", "openrouter"],
 };
 
 export const ALL_PROVIDERS: AiProviderName[] = [
   "openai",
   "anthropic",
   "google",
+  "groq",
+  "opencode",
   "openrouter",
 ];
+
+/** Chỉ các provider có gói free (hoặc model free) mới được dùng khi AI_FREE_ONLY=1. */
+const FREE_PROVIDERS = new Set<AiProviderName>([
+  "opencode",
+  "google",
+  "groq",
+  "openrouter",
+]);
 
 function envOrder(): AiProviderName[] {
   const raw = process.env.AI_PROVIDER_ORDER;
@@ -65,10 +82,16 @@ function envOrder(): AiProviderName[] {
 }
 
 function resolveOrder(task: AiTask, explicit?: AiProviderName): AiProviderName[] {
-  if (explicit) return [explicit];
-  const preferred = TASK_PREFERENCE[task];
-  const merged = [...preferred, ...envOrder()];
-  return [...new Set(merged)];
+  const freeOnly = process.env.AI_FREE_ONLY === "1";
+  const merged = explicit
+    ? [explicit]
+    : freeOnly
+      ? [...envOrder(), ...TASK_PREFERENCE[task]]
+      : [...TASK_PREFERENCE[task], ...envOrder()];
+  const order = [...new Set(merged)];
+  return freeOnly
+    ? order.filter((name) => FREE_PROVIDERS.has(name))
+    : order;
 }
 
 export class AiRouterError extends Error {
@@ -97,7 +120,9 @@ export async function generate(input: GenerateInput): Promise<GenerateResult> {
 
   if (configured.length === 0) {
     throw new AiRouterError(
-      "Chưa cấu hình AI provider nào. Thêm OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY hoặc OPENROUTER_API_KEY vào .env.local.",
+      process.env.AI_FREE_ONLY === "1"
+        ? "Chưa cấu hình provider miễn phí nào. Thêm GOOGLE_API_KEY hoặc GROQ_API_KEY vào .env.local (AI_FREE_ONLY=1 đang bật)."
+        : "Chưa cấu hình AI provider nào. Thêm OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY hoặc OPENROUTER_API_KEY vào .env.local.",
       []
     );
   }
@@ -106,7 +131,18 @@ export async function generate(input: GenerateInput): Promise<GenerateResult> {
 
   for (const name of configured) {
     try {
-      const { text, model, usage } = await PROVIDERS[name].chat(input);
+      const modelOverride = input.provider
+        ? name === input.provider
+          ? input.model
+          : undefined
+        : name === "opencode" &&
+            input.model &&
+            isFreeOpencodeModel(input.model)
+          ? input.model
+          : undefined;
+      const providerInput = { ...input, model: modelOverride };
+      const { text, model, usage } =
+        await PROVIDERS[name].chat(providerInput);
       const { costUsd, priced } = computeCostUsd(
         model,
         usage.inputTokens,

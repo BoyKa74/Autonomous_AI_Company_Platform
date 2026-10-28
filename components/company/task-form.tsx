@@ -11,10 +11,12 @@ import { AGENT_ROLES } from "@/lib/constants";
 export function TaskForm({
   companyId,
   agents,
+  channels,
   defaultAgentId,
 }: {
   companyId: string;
   agents: Pick<AiAgent, "id" | "name" | "role">[];
+  channels: { id: string; name: string }[];
   defaultAgentId?: string | null;
 }) {
   const [state, action] = useActionState(createTask, initialFormState);
@@ -27,6 +29,21 @@ export function TaskForm({
       )}
 
       <input type="hidden" name="company_id" value={companyId} />
+
+      <Field
+        label="Kênh đăng"
+        htmlFor="task-channel"
+        hint="AI sẽ đọc hướng dẫn riêng (ai_brief) của kênh này."
+      >
+        <Select id="task-channel" name="channel_id" defaultValue="">
+          <option value="">Không gắn kênh</option>
+          {channels.map((channel) => (
+            <option key={channel.id} value={channel.id}>
+              {channel.name}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
       <Field label="Giao cho AI" htmlFor="task-agent">
         <Select

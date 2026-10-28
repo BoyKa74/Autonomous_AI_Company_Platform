@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { requireUser } from "@/lib/auth";
 import {
   getBudgetOverview,
+  listAgentCompanyCounts,
   listCompanies,
   listRecentLedger,
 } from "@/lib/data";
@@ -19,29 +20,35 @@ import {
 } from "@/components/ui/kit";
 import { COMPANY_STATUSES, COMPANY_VERTICALS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/utils";
+import { ChevronRightIcon } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Công ty AI" };
 
 function budgetColor(ratio: number): string {
-  if (ratio >= 1) return "#ea6a6a";
-  if (ratio >= 0.8) return "#e8b64b";
-  return "#4cc38a";
+  if (ratio >= 1) return "#cf3f45";
+  if (ratio >= 0.8) return "#b07d10";
+  return "#18855a";
 }
 
 export default async function CompanyPage() {
   await connection();
   const me = await requireUser();
 
-  const [overview, companies, ledger] = await Promise.all([
+  const [overview, companies, ledger, agentCounts] = await Promise.all([
     getBudgetOverview(me.id),
     listCompanies(),
     listRecentLedger(10),
+    listAgentCompanyCounts(),
   ]);
 
   const ratio =
     overview.settings.monthly_budget_usd > 0
       ? overview.systemSpend / overview.settings.monthly_budget_usd
       : 0;
+
+  const spendByCompany = new Map(
+    overview.companies.map((company) => [company.id, company])
+  );
 
   return (
     <div className="space-y-6 rise-in">
@@ -59,6 +66,78 @@ export default async function CompanyPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <Panel
+          eyebrow="Danh sách"
+          title={`${companies.length} công ty`}
+          bodyClassName="p-2"
+        >
+          {companies.length === 0 ? (
+            <div className="p-2">
+              <EmptyState
+                title="Chưa có công ty AI"
+                description="Tạo công ty Affiliate, Xuất bản hoặc Media để bắt đầu."
+              />
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {companies.map((company) => {
+                const vertical = COMPANY_VERTICALS[company.vertical];
+                const status = COMPANY_STATUSES[company.status];
+                const spend = spendByCompany.get(company.id);
+                const companyRatio =
+                  spend && spend.budget > 0 ? spend.spend / spend.budget : 0;
+                return (
+                  <li key={company.id}>
+                    <Link
+                      href={`/company/${company.id}`}
+                      className="group flex items-center gap-3 rounded-lg border border-ink-700 bg-ink-900 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:border-signal-500/60 hover:bg-white hover:shadow-md"
+                    >
+                      <span
+                        className="h-11 w-1 shrink-0 rounded-full"
+                        style={{ backgroundColor: vertical.color }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-fog-100">
+                            {company.name}
+                          </span>
+                          <Tag>{agentCounts[company.id] ?? 0} AI</Tag>
+                        </div>
+                        <p className="mt-0.5 text-xs text-fog-600">
+                          {vertical.label} · tự chủ cấp {company.autonomy_level}
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <MeterBar
+                            value={Math.min(1, companyRatio)}
+                            color={budgetColor(companyRatio)}
+                            className="w-24"
+                          />
+                          <span className="font-mono text-[10px] tabular-nums text-fog-600">
+                            ${(spend?.spend ?? 0).toFixed(2)} / $
+                            {(spend?.budget ?? 0).toFixed(0)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <span
+                          className="font-mono text-[10px] uppercase tracking-wider"
+                          style={{ color: status.color }}
+                        >
+                          {status.label}
+                        </span>
+                        <span className="flex items-center gap-0.5 font-mono text-[10px] uppercase tracking-wider text-fog-600 transition-colors group-hover:text-signal-500">
+                          Mở
+                          <ChevronRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+
         <Panel eyebrow="Ngân sách" title="Kiểm soát chi phí AI">
           <div className="mb-3 flex items-end justify-between gap-4">
             <div>
@@ -66,7 +145,8 @@ export default async function CompanyPage() {
                 ${overview.systemSpend.toFixed(2)}
               </p>
               <p className="mt-1 text-xs text-fog-600">
-                đã dùng tháng này / trần ${overview.settings.monthly_budget_usd.toFixed(2)}
+                đã dùng tháng này / trần $
+                {overview.settings.monthly_budget_usd.toFixed(2)}
               </p>
             </div>
             <Tag
@@ -92,7 +172,9 @@ export default async function CompanyPage() {
             <BudgetSettingsForm settings={overview.settings} />
           </div>
         </Panel>
+      </div>
 
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <Panel eyebrow="Chi tiêu" title="Theo công ty" bodyClassName="p-0">
           {overview.companies.length === 0 ? (
             <div className="p-4">
@@ -113,7 +195,7 @@ export default async function CompanyPage() {
                   >
                     <Link
                       href={`/company/${company.id}`}
-                      className="min-w-0 flex-1 truncate text-sm text-fog-100 hover:text-signal-300"
+                      className="min-w-0 flex-1 truncate text-sm text-fog-100 hover:text-signal-500"
                     >
                       {company.name}
                     </Link>
@@ -148,53 +230,6 @@ export default async function CompanyPage() {
                 ))}
               </ul>
             </div>
-          )}
-        </Panel>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <Panel eyebrow="Danh sách" title={`${companies.length} công ty`} bodyClassName="p-0">
-          {companies.length === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                title="Chưa có công ty AI"
-                description="Tạo công ty Affiliate, Xuất bản hoặc Media để bắt đầu."
-              />
-            </div>
-          ) : (
-            <ul className="divide-y divide-ink-700">
-              {companies.map((company) => {
-                const vertical = COMPANY_VERTICALS[company.vertical];
-                const status = COMPANY_STATUSES[company.status];
-                return (
-                  <li key={company.id}>
-                    <Link
-                      href={`/company/${company.id}`}
-                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-800"
-                    >
-                      <span
-                        className="inline-block size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: vertical.color }}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-fog-100">
-                          {company.name}
-                        </span>
-                        <span className="block text-xs text-fog-600">
-                          {vertical.label} · tự chủ cấp {company.autonomy_level}
-                        </span>
-                      </span>
-                      <span
-                        className="font-mono text-[10.5px] uppercase tracking-wider"
-                        style={{ color: status.color }}
-                      >
-                        {status.label}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
           )}
         </Panel>
 

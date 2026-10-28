@@ -49,6 +49,7 @@ export function Button({
 /* ---------- Panel ---------- */
 
 export function Panel({
+  id,
   title,
   eyebrow,
   actions,
@@ -56,6 +57,7 @@ export function Panel({
   bodyClassName,
   children,
 }: {
+  id?: string;
   title?: ReactNode;
   eyebrow?: string;
   actions?: ReactNode;
@@ -65,8 +67,9 @@ export function Panel({
 }) {
   return (
     <section
+      id={id}
       className={cn(
-        "rounded-lg border border-ink-700 bg-ink-850",
+        "scroll-mt-24 rounded-lg border border-ink-700 bg-ink-850",
         className
       )}
     >

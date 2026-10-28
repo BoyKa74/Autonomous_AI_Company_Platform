@@ -42,3 +42,11 @@ export function signalLevel(value: number, max: number): number {
   const lv = Math.log10(value + 1) / Math.log10(max + 1);
   return Math.min(1, Math.max(0.04, lv));
 }
+
+export function formatVnd(value: number): string {
+  return `${new Intl.NumberFormat("vi-VN").format(Math.round(value))} ₫`;
+}
+
+export function formatUsd(value: number): string {
+  return `$${value.toFixed(2)}`;
+}

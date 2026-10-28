@@ -159,6 +159,12 @@ export const companySchema = z.object({
     .min(0, "Ngân sách không âm")
     .max(100_000)
     .default(15),
+  daily_token_budget: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(1_000_000)
+    .default(100_000),
   autonomy_level: z.coerce.number().int().min(0).max(3).default(1),
 });
 
@@ -167,6 +173,7 @@ export const companyUpdateSchema = z.object({
   status: z.enum(["draft", "active", "paused", "archived"]),
   autonomy_level: z.coerce.number().int().min(0).max(3),
   monthly_budget_usd: z.coerce.number().min(0).max(100_000),
+  daily_token_budget: z.coerce.number().int().min(1000).max(1_000_000),
   mission: z
     .string()
     .trim()
@@ -201,24 +208,191 @@ export const agentSchema = z.object({
     .trim()
     .optional()
     .transform((value) => (value ? value : null)),
+  model: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => (value ? value : null)),
   max_tokens_per_run: z.coerce
     .number()
     .int()
     .min(256, "Tối thiểu 256 token")
     .max(32_000)
     .default(4000),
+  daily_token_budget: z.coerce
+    .number()
+    .int()
+    .min(500, "Tối thiểu 500 token/ngày")
+    .max(200_000)
+    .default(15000),
 });
 
 export const agentTaskSchema = z.object({
   company_id: z.string().uuid(),
+  channel_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : null)),
   agent_id: z.string().uuid("Chọn agent thực hiện"),
   title: z.string().trim().min(3, "Nhập tiêu đề nhiệm vụ").max(200),
   brief: z.string().trim().min(3, "Nhập mô tả nhiệm vụ").max(20_000),
   requires_approval: z.coerce.boolean().default(true),
 });
 
+export const knowledgeCategorySchema = z.enum([
+  "prompt",
+  "playbook",
+  "brand",
+  "reference",
+  "sop",
+]);
+
+export const knowledgeDocSchema = z.object({
+  title: z.string().trim().min(2, "Nhập tiêu đề tài liệu").max(200),
+  category: knowledgeCategorySchema,
+  domain: z.string().trim().min(1, "Chọn mảng tài liệu").max(60),
+  company_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : null)),
+  content: z
+    .string()
+    .trim()
+    .min(10, "Nội dung tối thiểu 10 ký tự")
+    .max(50_000),
+  tags: z
+    .string()
+    .trim()
+    .max(300)
+    .optional()
+    .transform((value) =>
+      (value ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .slice(0, 12)
+    ),
+  pinned: z.coerce.boolean().default(false),
+  active: z.coerce.boolean().default(true),
+});
+
+export const knowledgeDocUpdateSchema = knowledgeDocSchema.extend({
+  id: z.string().uuid(),
+});
+
 export const aiSettingsSchema = z.object({
   monthly_budget_usd: z.coerce.number().min(0).max(1_000_000),
   alert_threshold_pct: z.coerce.number().int().min(10).max(100),
   hard_stop: z.coerce.boolean(),
+});
+
+export const revenueSourceSchema = z.enum([
+  "affiliate",
+  "product_sales",
+  "ads",
+  "sponsorship",
+  "other",
+]);
+
+export const expenseCategorySchema = z.enum([
+  "tools",
+  "vps",
+  "ads",
+  "contractor",
+  "media",
+  "other",
+]);
+
+export const revenueEntrySchema = z.object({
+  company_id: z.string().uuid(),
+  channel_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : null)),
+  occurred_on: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ"),
+  source: revenueSourceSchema,
+  platform: z
+    .string()
+    .trim()
+    .max(60)
+    .optional()
+    .transform((value) => (value ? value : null)),
+  amount_vnd: z.coerce
+    .number()
+    .min(0, "Số tiền không âm")
+    .max(1_000_000_000_000),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((value) => (value ? value : null)),
+  external_ref: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((value) => (value ? value : null)),
+});
+
+export const expenseEntrySchema = z.object({
+  company_id: z.string().uuid(),
+  occurred_on: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ"),
+  category: expenseCategorySchema,
+  amount_vnd: z.coerce
+    .number()
+    .min(0, "Số tiền không âm")
+    .max(1_000_000_000_000),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((value) => (value ? value : null)),
+});
+
+export const revenuePlanSchema = z.object({
+  company_id: z.string().uuid(),
+  monthly_revenue_target_vnd: z.coerce.number().min(0).max(1_000_000_000_000),
+  monthly_views: z.coerce.number().int().min(0).max(1_000_000_000),
+  ctr_pct: z.coerce.number().min(0).max(100),
+  conversion_pct: z.coerce.number().min(0).max(100),
+  avg_order_value_vnd: z.coerce.number().min(0).max(1_000_000_000),
+  commission_pct: z.coerce.number().min(0).max(100),
+  ads_budget_vnd: z.coerce.number().min(0).max(1_000_000_000_000),
+  usd_vnd_rate: z.coerce.number().int().min(1000).max(100_000),
+});
+
+export const facebookConnectSchema = z.object({
+  company_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : null)),
+  page_id: z
+    .string()
+    .trim()
+    .regex(/^\d{5,25}$/, "Page ID chỉ gồm chữ số"),
+  access_token: z
+    .string()
+    .trim()
+    .min(40, "Page Access Token quá ngắn")
+    .max(5000),
+});
+
+export const facebookPostSchema = z.object({
+  account_id: z.string().uuid(),
+  message: z
+    .string()
+    .trim()
+    .min(1, "Nhập nội dung bài đăng")
+    .max(5000, "Tối đa 5000 ký tự"),
 });

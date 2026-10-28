@@ -47,3 +47,6 @@ services/engines/
 services/**/.env
 services/worker/node_modules/
 services/windows/*.cmd.local
+
+# Third-party Agent skills installed by `npx skills` (reinstall via README)
+.agents/

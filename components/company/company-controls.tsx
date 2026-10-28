@@ -78,6 +78,20 @@ export function CompanyControls({
               defaultValue={company.monthly_budget_usd}
             />
           </Field>
+
+          <Field
+            label="Token miễn phí mỗi ngày"
+            htmlFor="daily_token_budget"
+          >
+            <Input
+              id="daily_token_budget"
+              name="daily_token_budget"
+              type="number"
+              min={1000}
+              step={1000}
+              defaultValue={company.daily_token_budget}
+            />
+          </Field>
         </div>
 
         <Field label="Sứ mệnh" htmlFor="mission">

@@ -17,6 +17,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { ArrowLeftIcon, SparkIcon } from "@/components/icons";
 import { ChannelRowMeta } from "@/components/channels/channel-card";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { CHANNEL_NICHES } from "@/lib/constants";
 
 export async function generateMetadata({
   params,
@@ -119,6 +120,28 @@ export default async function ChannelDetailPage({
                   {channel.goal || "—"}
                 </span>
               </InfoRow>
+              <InfoRow label="Ngách">
+                <span className="text-sm text-fog-300">
+                  {channel.niche
+                    ? CHANNEL_NICHES[channel.niche] ?? channel.niche
+                    : "—"}
+                </span>
+              </InfoRow>
+              <InfoRow label="Định dạng">
+                <span className="font-mono text-xs text-fog-300">
+                  {channel.content_format || "—"}
+                </span>
+              </InfoRow>
+              <InfoRow label="Kiếm tiền">
+                <span className="font-mono text-xs text-fog-300">
+                  {channel.monetization || "—"}
+                </span>
+              </InfoRow>
+              <InfoRow label="Tệp khán giả">
+                <span className="text-sm text-fog-300">
+                  {channel.target_audience || "—"}
+                </span>
+              </InfoRow>
               <InfoRow label="Ngày tạo">
                 <span className="font-mono text-xs text-fog-500">
                   {formatDate(channel.created_at)}
@@ -130,6 +153,15 @@ export default async function ChannelDetailPage({
                 </span>
               </InfoRow>
             </dl>
+
+            {channel.ai_brief && (
+              <div className="mt-4 rounded-md border border-signal-600/40 bg-signal-500/5 p-3">
+                <Eyebrow className="mb-1">Hướng dẫn cho AI</Eyebrow>
+                <p className="whitespace-pre-wrap text-sm text-fog-300">
+                  {channel.ai_brief}
+                </p>
+              </div>
+            )}
 
             {channel.notes && (
               <div className="mt-4 rounded-md border border-ink-700 bg-ink-900 p-3">

@@ -5,6 +5,7 @@ import type {
   ChannelStatus,
   CompanyStatus,
   CompanyVertical,
+  KnowledgeCategory,
   ContentKind,
   ContentStatus,
 } from "@/types/database";
@@ -138,9 +139,74 @@ export const TASK_STATUSES: Record<
 > = {
   queued: { label: "Chờ chạy", color: "#5b6675" },
   running: { label: "Đang chạy", color: "#cd8615" },
-  review: { label: "Chờ duyệt", color: "#2f6fd6" },
+  manager_review: { label: "Quản lý duyệt", color: "#7c53c3" },
+  review: { label: "Chờ bạn duyệt", color: "#2f6fd6" },
   approved: { label: "Đã duyệt", color: "#18855a" },
   rejected: { label: "Từ chối", color: "#cf3f45" },
   failed: { label: "Lỗi", color: "#cf3f45" },
   canceled: { label: "Đã huỷ", color: "#6b7686" },
+};
+
+export const KNOWLEDGE_CATEGORIES: Record<
+  KnowledgeCategory,
+  { label: string; color: string }
+> = {
+  prompt: { label: "Prompt", color: "#cd8615" },
+  playbook: { label: "Playbook", color: "#2f6fd6" },
+  brand: { label: "Thương hiệu", color: "#7c53c3" },
+  reference: { label: "Tham khảo", color: "#0f8f9c" },
+  sop: { label: "Quy trình (SOP)", color: "#18855a" },
+};
+
+export const KNOWLEDGE_DOMAINS = [
+  "Content Facebook",
+  "Content TikTok",
+  "Content YouTube",
+  "SEO & Website",
+  "Sản xuất video",
+  "Nhạc & Audio",
+  "Sách & Xuất bản",
+  "Bán hàng & Affiliate",
+  "Thương hiệu",
+  "Vận hành & Quy trình",
+  "Chung",
+];
+
+export const REVENUE_SOURCES: Record<
+  "affiliate" | "product_sales" | "ads" | "sponsorship" | "other",
+  { label: string; color: string }
+> = {
+  affiliate: { label: "Hoa hồng affiliate", color: "#cd8615" },
+  product_sales: { label: "Bán sản phẩm", color: "#18855a" },
+  ads: { label: "Quảng cáo / CPM", color: "#2f6fd6" },
+  sponsorship: { label: "Tài trợ / Booking", color: "#7c53c3" },
+  other: { label: "Khác", color: "#5b6675" },
+};
+
+export const EXPENSE_CATEGORIES: Record<
+  "tools" | "vps" | "ads" | "contractor" | "media" | "other",
+  string
+> = {
+  tools: "Công cụ / phần mềm",
+  vps: "Máy chủ / VPS",
+  ads: "Ngân sách quảng cáo",
+  contractor: "Nhân sự / CTV",
+  media: "Sản xuất media",
+  other: "Khác",
+};
+
+export const CHANNEL_NICHES: Record<string, string> = {
+  news: "Tin tức",
+  affiliate_home: "Gia đình + Affiliate",
+  movie_review: "Review phim",
+  ai_music: "Nhạc AI",
+  funny_animals: "Động vật vui",
+  short_film: "Phim ngắn",
+  home_appliances: "Gia dụng nhà cửa",
+  trend_dance: "Dance trend + nhân vật",
+  personal_brand: "Cá nhân / kể chuyện",
+  electronics: "Điện tử",
+  tech_ai: "Tech · AI",
+  mom_baby: "Mẹ & Bé",
+  engagement_service: "Cộng đồng",
 };

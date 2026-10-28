@@ -1,126 +1,356 @@
-# VIC Affiliate — Phòng điều khiển đa kênh
+# VIC Affiliate — Multi-Agent AI Company Console
 
-Hệ thống quản lý hệ sinh thái kinh doanh nội dung & bán hàng: nhiều kênh YouTube,
-TikTok, Facebook, đầu sách, kênh truyền thông, Shopee, TikTok Shop và các sàn
-quốc tế — có phân quyền user/admin, REST API và AI router đa provider.
+A control plane for a multi-channel content and affiliate business: YouTube, TikTok,
+Facebook, books, media channels, Shopee, TikTok Shop and international storefronts.
+It combines a free-only AI router, an AI company hierarchy, token budgets, human
+approval gates, a 2D multi-agent workspace, a 3D office view and a media job queue.
 
-- **Framework:** Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind CSS v4
-- **Dữ liệu & xác thực:** Supabase (Postgres + Auth + Row Level Security)
-- **AI:** router đa provider (OpenAI / Anthropic / Google / OpenRouter) với fallback tự động
+**Documentation languages:** English (primary) · [Tiếng Việt](README.vi.md)
 
-## Tính năng Phase 1
+## Stack
 
-- Đăng ký / đăng nhập (Supabase Auth), phân quyền `user` / `admin` bằng RLS.
-- Quản lý kênh: tạo, sửa, xoá, lọc theo nền tảng / trạng thái / khu vực / từ khoá.
-- Bảng điều khiển: tín hiệu theo nền tảng, dòng nội dung, kênh cập nhật gần đây.
-- AI Studio: viết kịch bản, chương sách, caption, chiến lược kênh; lưu vào kho nội dung.
-- Khu vực Admin: quản lý người dùng, đổi vai trò, xem toàn bộ kênh.
-- REST API: `/api/channels`, `/api/channels/[id]`, `/api/ai/generate`, `/api/admin/users`.
+- **Framework:** Next.js 16 (App Router, Turbopack), TypeScript, Tailwind CSS v4
+- **Data & auth:** Supabase (Postgres, Auth, Row Level Security)
+- **AI:** multi-provider router with free-only guard
+  (OpenCode Zen, Google Gemini, Groq, OpenRouter; paid providers blocked by default)
+- **Automation:** Playwright autopilot on macOS, Agent Reach research CLI
+- **Media:** `media_jobs` queue + Windows worker for voice/music
+- **Diagrams:** Archify, exported as standalone interactive HTML
 
-## Cài đặt
+## Current features
 
-### 1. Cài dependencies
+- **Multi-agent workspace:** 2D organization tree by default, with a toggle to the
+  3D office. The workspace shows agents, live status, token usage, dependencies,
+  quick actions and an inspector panel.
+- **AI company hierarchy:** CEO → managers → specialists, persisted in
+  `companies` / `ai_agents`. Tasks are assigned to agents, require approval and
+  settle rewards, score and tier after human review.
+- **Free-only AI routing:** `AI_FREE_ONLY=1` blocks paid models/providers at
+  runtime. The fallback order is OpenCode Zen → Google Gemini → Groq → OpenRouter.
+- **Token budgets:** company, CEO, manager, specialist, worker and per-task
+  budgets; per-call output cap; one manager revision round; circuit breaker on
+  429/quota; one worker lock; cost ledger.
+- **Human approval:** AI output is never auto-published. Approved work can settle
+  salary, score and tier; rejected work loses score/reward.
+- **Research and tools:** Agent Reach (read-only web/GitHub/YouTube research),
+  optional Browser MCP for real signed-in Chrome sessions, and Archify for
+  architecture documentation.
+- **Skills & SOP:** affiliate product research, affiliate review and short-video
+  storyboard skills with deterministic quality gates; a pinned affiliate SOP is
+  injected into company knowledge.
+- **Media pipeline:** voice/music jobs are queued in Supabase and processed by a
+  Windows worker. A MoneyPrinterTurbo video renderer is planned, not wired yet.
+- **REST API:** `/api/channels`, `/api/channels/[id]`, `/api/ai/generate`,
+  `/api/admin/users`.
+
+## Architecture
+
+Interactive diagrams (dark by default):
+
+- [Current AI company runtime — English](docs/architecture/current-ai-company.en-dark.html)
+- [Current task workflow — English](docs/architecture/current-task-workflow.en-dark.html)
+- [Current AI company runtime — Vietnamese](docs/architecture/current-ai-company.vi.html)
+- [Current task workflow — Vietnamese](docs/architecture/current-task-workflow.vi.html)
+
+Written overview:
+
+- [Architecture — English](docs/ARCHITECTURE.md)
+- [Kiến trúc — Tiếng Việt](docs/ARCHITECTURE.vi.md)
+
+Archify source candidates and validation receipts are under `.archify/` and
+`docs/architecture/`. The checked English artifacts are
+`current-ai-company.en.html` and `current-task-workflow.en.html`; the `.en-dark.html`
+files are presentation copies with dark as the default theme. To regenerate the
+diagrams, install Archify with `npx skills add tt-a1i/archify -g` and use the
+commands in [Validation](#validation).
+
+## Quick start
+
+### Requirements
+
+- Node.js 20+ and npm
+- A Supabase project
+- Python 3.10+ and `uv` only if you use Agent Reach
+- Chrome/Edge/Brave only if you use Browser MCP
+- macOS only for the Playwright autopilot
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Tạo project Supabase & nạp schema
+### 2. Configure Supabase
 
-1. Tạo project mới tại [supabase.com](https://supabase.com).
-2. Mở **SQL Editor**, dán nội dung file `supabase/migrations/20261019000000_init.sql` và chạy.
-   (Hoặc dùng Supabase CLI: `supabase db push`.)
-3. Trong **Authentication > Sign In / Providers**, tắt *Confirm email* khi phát triển
-   để đăng ký xong dùng được ngay (bật lại khi lên production).
+1. Create a project at [supabase.com](https://supabase.com).
+2. Run every SQL file in `supabase/migrations/` in order, or use the Supabase CLI:
 
-### 3. Cấu hình biến môi trường
+```bash
+supabase db push
+```
+
+3. Copy the environment template:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Điền:
+4. Fill in the required values:
 
-| Biến | Bắt buộc | Ghi chú |
+| Variable | Required | Notes |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase > Project Settings > API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase > Project Settings > API |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` / `OPENROUTER_API_KEY` | Ít nhất 1 | AI Studio dùng provider nào có key |
-| `AI_PROVIDER_ORDER` | Không | Thứ tự fallback, mặc định `openai,anthropic,google,openrouter` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase → Project Settings → API |
+| `AI_FREE_ONLY` | Recommended | `1` blocks paid providers/models |
+| `AI_PROVIDER_ORDER` | No | Defaults to `opencode,google,groq,openrouter` |
+| `OPENCODE_API_KEY` | For OpenCode free | Key used only to authenticate free Zen models |
+| `GOOGLE_API_KEY` | For Gemini free | Google AI Studio key |
+| `GROQ_API_KEY` | For Groq free | Groq console key |
+| `OPENROUTER_API_KEY` | For OpenRouter free | Use a `:free` model or `openrouter/free` |
+| `TOKEN_ENCRYPTION_KEY` | For OAuth channels | `openssl rand -base64 32` |
+| `AUTOPILOT_EMAIL` / `AUTOPILOT_PASSWORD` | Autopilot only | Supabase test account |
+| `AUTOPILOT_COMPANY_IDS` | Autopilot only | Comma-separated company IDs |
 
-### 4. Chạy
+The committed `.env.example` documents every supported variable. Do not commit
+`.env.local` or real API keys.
+
+### 3. Run
 
 ```bash
 npm run dev
 ```
 
-Mở http://localhost:3000 → đăng ký tài khoản đầu tiên.
-
-### 5. Phong admin cho tài khoản đầu tiên
-
-Trong Supabase SQL Editor:
+Open [http://localhost:3000](http://localhost:3000), register the first account,
+then run the following in Supabase SQL Editor to make it an admin:
 
 ```sql
-update public.profiles set role = 'admin' where email = 'ban@example.com';
+update public.profiles
+set role = 'admin'
+where email = 'you@example.com';
 ```
 
-Đăng nhập lại để thấy mục **Admin** trong sidebar.
+Sign in again to see the Admin area.
 
-## Cấu trúc thư mục
+## AI configuration
 
+The default development configuration is free-only:
+
+```env
+AI_FREE_ONLY=1
+AI_PROVIDER_ORDER=opencode,google,groq,openrouter
+
+OPENCODE_BASE_URL=https://opencode.ai/zen/v1
+OPENCODE_MODEL=deepseek-v4.1-flash-free
+
+GOOGLE_MODEL=gemini-3.8-flash
+GROQ_MODEL=qwen/qwen3.8-27b
+OPENROUTER_MODEL=openrouter/free
+
+AI_DAILY_TOKEN_LIMIT=100000
+AI_AGENT_DAILY_TOKEN_LIMIT=15000
+AI_TASK_TOKEN_LIMIT=15000
+AI_MAX_TOKENS_PER_CALL=3000
+AI_MAX_REVIEW_ROUNDS=1
 ```
+
+Paid providers (`openai`, `anthropic`, `opencode` Go endpoint, OpenRouter paid
+models) are rejected by the router while `AI_FREE_ONLY=1`. Do not disable the
+guard unless you explicitly intend to spend paid credits.
+
+Provider-specific model overrides live in `.env.local`; the UI also lets you set a
+free model per agent. The router only passes a per-agent model override to the
+provider that owns it, so fallback providers keep their own defaults.
+
+## Token budgets
+
+The budget hierarchy is enforced in `lib/ai/token-budget.ts` and checked before
+every AI call:
+
+| Scope | Default | Notes |
+| --- | ---: | --- |
+| Company | 100,000 / day | CEO can allocate this pool to tasks |
+| CEO | 100,000 / day | Planning and audit calls |
+| Manager | 20,000 / day | Manager reviews |
+| Specialist | 15,000 / day | Research, writing, SEO |
+| Worker | 5,000 / day | Small operational tasks |
+| Task | 15,000 | Allocated by the CEO when planning |
+| Per call | 3,000 | Output token ceiling |
+| Review rounds | 1 | Max one manager revision |
+
+Open task budgets are reserved so consecutive planner runs do not over-allocate.
+Budget exhaustion, quota 429s and provider failures stop the task and send it to
+review instead of retrying indefinitely.
+
+## AI company and task lifecycle
+
+1. The CEO agent plans tasks and allocates a `token_budget` to each task.
+2. The budget guard checks company, agent and task limits before every call.
+3. A specialist runs one workflow step at a time.
+4. The manager reviews the completed workflow. It can request one revision.
+5. A human approves or rejects the task.
+6. Approved work settles reward, score and tier; rejected work loses score/reward.
+
+Current workflow diagram:
+[English](docs/architecture/current-task-workflow.en-dark.html) ·
+[Vietnamese](docs/architecture/current-task-workflow.vi.html)
+
+## 2D workspace and 3D office
+
+Open `/company/[id]`:
+
+- **Multi-Agent 2D** is the default: organization tree, status rail, inspector,
+  dependencies, quick actions and agent tabs.
+- **Văn phòng 3D** switches to the existing 3D office scene.
+- `?headless=1` is intended for background automation. It does not start AI by
+  itself; the “Tự động” toggle still controls autopilot.
+
+The 2D workspace and the bottom task/report panels use a dark island theme. The
+3D view keeps the original light shell and 3D office.
+
+## Autopilot
+
+The autopilot is a **macOS Playwright worker** that opens the company page,
+enables “Tự động” and lets the server run one step per tick. It is opt-in and is
+not started by `npm run dev`.
+
+```bash
+# start
+nohup node services/autopilot/mac-autopilot.mjs > /tmp/vic-autopilot.log 2>&1 &
+
+# inspect
+tail -f /tmp/vic-autopilot.log
+
+# stop
+pkill -f mac-autopilot.mjs
+```
+
+It uses a file lock to prevent two copies from running. The server also has an
+in-process lock for `autoRunNext`, so duplicate calls are ignored. The autopilot
+must never be used as a way to spend paid credits.
+
+## Skills and SOP
+
+Project-local OpenCode skills:
+
+```text
+.opencode/skills/affiliate-product-research/
+.opencode/skills/affiliate-review/
+.opencode/skills/short-video-storyboard/
+```
+
+Each skill has a `SKILL.md`, zero-dependency Node scripts and a self-test. Run
+the tests with:
+
+```bash
+for f in .opencode/skills/*/scripts/selftest.mjs; do node "$f"; done
+```
+
+Useful commands:
+
+```bash
+node .opencode/skills/affiliate-product-research/scripts/score.mjs candidates.json \
+  --out shortlist.json --markdown shortlist.md
+
+node .opencode/skills/affiliate-review/scripts/check.mjs draft.md --meta meta.json
+
+node .opencode/skills/short-video-storyboard/scripts/check.mjs storyboard.json
+```
+
+The skills are loaded by OpenCode after a restart. The pinned “SOP Affiliate:
+Research, Review, Video” knowledge document is injected into AI company prompts
+immediately.
+
+## Research and browser tools
+
+- **Agent Reach** is installed locally. It is read-only and can search/read the
+  web, GitHub and YouTube transcripts without a model download.
+- **Browser MCP** server and Chrome extension are optional. Use a dedicated
+  browser profile; do not use banking/email tabs. The extension must be allowed
+  once from its popup.
+- **MoneyPrinterTurbo** is a planned video renderer. It is not part of the current
+  runtime. When added, it should run as a separate CPU worker, not inside
+  Vercel/serverless.
+
+## Media worker
+
+The web app creates voice/music jobs in `media_jobs`. A Windows worker picks them
+up, runs the local engines and uploads files to Supabase Storage:
+
+- Music: ACE-Step 1.5 (GGUF, CPU)
+- Vietnamese voice: VieNeu-TTS
+- Worker: `services/worker` (Node, service-role key stays on the worker machine)
+
+See [services/windows/README.md](services/windows/README.md).
+
+## Project structure
+
+```text
 app/
-  (auth)/            Đăng nhập, đăng ký
-  (app)/             Khu vực đã xác thực (sidebar + console)
-    dashboard/       Bảng điều khiển
-    channels/        Danh sách, tạo mới, chi tiết kênh
-    ai/              AI Studio
-    settings/        Hồ sơ, vai trò, đăng xuất
-    admin/           Người dùng, toàn bộ kênh
-  actions/           Server Actions (auth, channels, content, admin)
+  (auth)/            Sign in / sign up
+  (app)/             Authenticated console
+    company/         AI company workspace (2D + 3D)
+    knowledge/       AI knowledge base
+    revenue/         Revenue and expenses
+    channels/        Channel management
+  actions/           Server Actions (auth, company, tasks, AI)
   api/               REST API
-components/          UI kit + layout + channels + ai + admin
+components/          UI kit, workspace, 3D office, task list
 lib/
-  ai/                Router đa provider + prompt templates
-  supabase/          Client browser/server, refresh session cho proxy
-  data.ts            Truy vấn dữ liệu
-  validators.ts      Zod schemas dùng chung cho actions + API
-supabase/migrations  Schema + RLS + triggers
-proxy.ts             Refresh session + redirect (Next 16 thay thế middleware)
+  ai/                Router, free-model catalog, budgets, providers
+  supabase/          Browser/server clients and session refresh
+  workflows.ts       Workflow steps and state helpers
+supabase/migrations  Schema, RLS, triggers, token budgets
+services/            Autopilot, media worker, research tools
+.opencode/skills/    Project-local agent skills
+docs/                Architecture docs and interactive diagrams
+.archify/            Archify source JSON and finalize receipts
 ```
 
-## Xưởng media (worker trên Windows)
+## Security notes
 
-Web tạo job (nhạc / giọng đọc) → lưu vào bảng `media_jobs` → worker trên máy
-Windows nhận job, gọi engine local rồi đẩy file lên Supabase Storage (bucket
-`media`). Cài đặt và vận hành: xem [services/windows/README.md](services/windows/README.md).
+- Supabase RLS is the primary data boundary. Keep the service-role key on
+  server/worker machines only.
+- Never commit `.env.local`, autopilot credentials or provider keys.
+- The autopilot and Browser MCP can drive a signed-in browser. Use a dedicated
+  browser profile and stop the agent when not needed.
+- Free-only mode protects against accidental paid calls, but review
+  `AI_PROVIDER_ORDER` and model overrides before enabling autopilot.
+- Rotate any key that has been pasted into chat, logs or screenshots.
+- Human approval is the release gate for content and publishing.
 
-- Nhạc: ACE-Step 1.5 (GGUF, chạy CPU trên máy 8GB)
-- Giọng đọc tiếng Việt: VieNeu-TTS (CPU, torch-free)
-- Worker: `services/worker` (Node, service_role key nằm trên máy Windows)
+## Validation
 
-## Tập đoàn AI (công ty → CEO → quản lý → nhân viên)
+```bash
+npx tsc --noEmit
+node .opencode/skills/affiliate-product-research/scripts/selftest.mjs
+node .opencode/skills/affiliate-review/scripts/selftest.mjs
+node .opencode/skills/short-video-storyboard/scripts/selftest.mjs
+```
 
-- Cấu trúc tổ chức nằm trong DB (`companies`, `ai_agents`) — restart vẫn còn nguyên.
-- Giao việc cho từng AI (`agent_tasks`), mọi đầu ra mặc định **chờ duyệt** (cấp tự chủ 0–3).
-- Mỗi task có **dự toán token/USD trước khi chạy** (heuristic từ độ dài yêu cầu + trần token agent).
-- Ngân sách enforce bằng code qua `lib/ai/budget.ts`: trần tháng toàn hệ thống + trần từng công ty; `hard_stop` chặn gọi model khi chạm hạn mức. Mọi lần gọi ghi vào sổ `cost_ledger` (token thật từ nhà cung cấp, giá ở `lib/ai/pricing.ts`).
-- Cài cơ cấu mẫu 1 nút cho 3 ngành: Affiliate, Xuất bản, Media (`lib/company-templates.ts`) — hoặc thêm AI thủ công với provider/model/prompt riêng.
-- Trang `/company`: ngân sách tháng, chi tiêu theo công ty, agent tốn nhất, sổ giao dịch.
+Archify diagrams are validated with:
 
-> Bảng giá model là ước tính để enforce ngân sách; chỉnh bằng `AI_PRICE_OVERRIDES` (JSON) khi nhà cung cấp đổi giá.
+```bash
+node .agents/skills/archify/bin/archify.mjs finalize architecture \
+  .archify/architecture-current-en-20261028/candidate.json \
+  docs/architecture/current-ai-company.en.html --quality showcase --json
 
-## Ghi chú kỹ thuật
+node .agents/skills/archify/bin/archify.mjs finalize workflow \
+  .archify/workflow-current-task-en-20261028/candidate.json \
+  docs/architecture/current-task-workflow.en.html --quality showcase --json
+```
 
-- **Next 16:** middleware đổi tên thành `proxy.ts`; app bật Cache Components nên
-  layout `(app)` đặt `export const instant = false` để các trang dashboard render
-  động theo phiên đăng nhập. Có thể tối ưu từng route bằng `use cache` sau này.
-- **Bảo mật:** mọi truy vấn đi qua RLS (user chỉ thấy dữ liệu của mình, admin thấy tất cả);
-  trigger chặn user tự nâng quyền; API route tự xác thực phiên trong từng handler.
-- **Đăng nhập qua API:** các route API dùng session cookie (cùng phiên với web).
+## Roadmap
 
-## Roadmap gợi ý
+- Wire the public affiliate site and `/go` click tracking.
+- Add a real product research connector (Kalodata/TikTok Shop or public search).
+- Wire MoneyPrinterTurbo as a separate video render worker.
+- Add bilingual UI copy (the documentation is already English-first; UI copy is
+  currently Vietnamese).
+- Add automated tests for the task lifecycle and budget guard.
+- Add a LICENSE file before publishing as a public open-source project.
 
-- Phase 2: OAuth kết nối kênh (YouTube Data API, TikTok, Facebook Graph), đồng bộ số liệu tự động.
-- Phase 3: lên lịch đăng bài, AI agent tự động đề xuất lịch nội dung, thống kê doanh thu sàn.
-- Phase 4: đa ngôn ngữ cho thị trường quốc tế, phân tích hiệu suất theo vùng.
+## License
+
+No `LICENSE` file is currently present. Add an explicit license (for example MIT
+or Apache-2.0) before distributing this repository publicly. Third-party
+components and skills retain their own licenses and attributions.

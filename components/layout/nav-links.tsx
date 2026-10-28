@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+  BookIcon,
   BroadcastIcon,
   BuildingIcon,
   GaugeIcon,
+  PlugIcon,
   ShieldIcon,
   SlidersIcon,
+  WalletIcon,
   SparkIcon,
   UsersIcon,
   type IconProps,
@@ -25,6 +28,9 @@ const ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Bảng điều khiển", icon: GaugeIcon },
   { href: "/channels", label: "Kênh", icon: BroadcastIcon },
   { href: "/company", label: "Công ty AI", icon: BuildingIcon },
+  { href: "/knowledge", label: "Tri thức", icon: BookIcon },
+  { href: "/revenue", label: "Doanh thu", icon: WalletIcon },
+  { href: "/connections", label: "Kết nối kênh", icon: PlugIcon },
   { href: "/ai", label: "AI Studio", icon: SparkIcon },
   { href: "/settings", label: "Cài đặt", icon: SlidersIcon },
 ];

@@ -2,6 +2,8 @@ import type { NextRequest } from "next/server";
 import { getApiSession, jsonError } from "@/lib/api";
 import { buildSystemPrompt } from "@/lib/ai/prompts";
 import { AiRouterError, generate } from "@/lib/ai/router";
+import { logAiUsage } from "@/lib/ai/budget";
+import { getTokensUsedToday } from "@/lib/ai/token-budget";
 import { aiGenerateSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest) {
@@ -41,11 +43,33 @@ export async function POST(request: NextRequest) {
   const system = buildSystemPrompt(task, { channel, tone, audience });
 
   try {
+    const used = await getTokensUsedToday(supabase, { ownerId: user.id });
+    const limit = Number(process.env.AI_DAILY_TOKEN_LIMIT || 100000);
+    const estimatedInput = Math.ceil((system.length + prompt.length) / 4) + 200;
+    const remaining = limit - used - estimatedInput;
+    if (remaining < 500) {
+      return jsonError(
+        429,
+        "Đã chạm hạn mức token free trong ngày — dừng để tiết kiệm."
+      );
+    }
+
     const result = await generate({
       task,
       provider,
       system,
+      maxTokens: Math.min(2000, remaining),
       messages: [{ role: "user", content: prompt }],
+    });
+
+    await logAiUsage(supabase, {
+      ownerId: user.id,
+      provider: result.provider,
+      model: result.model,
+      purpose: "api:generate",
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      costUsd: result.costUsd,
     });
 
     return Response.json({

@@ -1,14 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AgentWorkspace2D,
+  DARK_WORKSPACE_STYLE,
+} from "@/components/company/agent-workspace-2d";
 import { OrgScene } from "@/components/company/org-scene";
 import { TaskForm } from "@/components/company/task-form";
 import { TaskList } from "@/components/company/task-list";
-import { removeAgent } from "@/app/actions/company";
+import { WorkflowCanvas } from "@/components/company/workflow-canvas";
+import { removeAgent, updateAgentBudget } from "@/app/actions/company";
+import {
+  autoRunNext,
+  planCompanyTasks,
+  runCompanyAudit,
+} from "@/app/actions/workflows";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { Eyebrow, Panel, Tag } from "@/components/ui/kit";
+import { DataValue, Eyebrow, Panel, Tag } from "@/components/ui/kit";
 import { AGENT_ROLES, TASK_STATUSES } from "@/lib/constants";
-import type { AiAgent, AgentTask, Company } from "@/types/database";
+import { OPENCODE_FREE_MODELS } from "@/lib/ai/free-models";
+import { tierMeta } from "@/lib/economy";
+import type {
+  AgentTask,
+  AiAgent,
+  Company,
+  CompanyReport,
+} from "@/types/database";
 
 const ACTIVE_STATUSES: AgentTask["status"][] = ["queued", "running", "review"];
 
@@ -16,14 +34,31 @@ export function CompanyWorkspace({
   company,
   agents,
   tasks,
+  aiReady,
+  reports,
+  channels,
+  headless = false,
+  tokenUsage = {},
 }: {
   company: Company;
   agents: AiAgent[];
   tasks: AgentTask[];
+  aiReady: boolean;
+  reports: CompanyReport[];
+  channels: { id: string; name: string }[];
+  headless?: boolean;
+  tokenUsage?: Record<string, number>;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<"tree" | "3d">("tree");
   const [spinning, setSpinning] = useState(false);
   const [dark, setDark] = useState(false);
+  const [auto, setAuto] = useState(false);
+  const [autoMessage, setAutoMessage] = useState<string | null>(null);
+  const [planning, setPlanning] = useState(false);
+  const [auditing, setAuditing] = useState(false);
+  const workingRef = useRef(false);
+  const router = useRouter();
 
   const selected = agents.find((agent) => agent.id === selectedId) ?? null;
 
@@ -56,6 +91,14 @@ export function CompanyWorkspace({
             toId: target.id,
           });
         }
+      } else if (task.status === "manager_review") {
+        const parent = target.parent_id ? byId.get(target.parent_id) : null;
+        if (parent) {
+          pairs.set(`${target.id}->${parent.id}`, {
+            fromId: target.id,
+            toId: parent.id,
+          });
+        }
       } else if (task.status === "review" && ceo && target.id !== ceo.id) {
         pairs.set(`${target.id}->${ceo.id}`, {
           fromId: target.id,
@@ -72,13 +115,175 @@ export function CompanyWorkspace({
     [agents]
   );
 
+  const leaderboard = useMemo(
+    () =>
+      [...agents].sort(
+        (a, b) =>
+          Number(b.earnings_usd) - Number(a.earnings_usd) ||
+          b.score - a.score
+      ),
+    [agents]
+  );
+
+  const leaderId =
+    leaderboard.length > 0 && Number(leaderboard[0].earnings_usd) > 0
+      ? leaderboard[0].id
+      : null;
+
+  useEffect(() => {
+    if (!auto) return;
+    let cancelled = false;
+
+    const tick = async () => {
+      if (workingRef.current) return;
+      workingRef.current = true;
+      try {
+        const result = await autoRunNext(company.id);
+        if (!cancelled) {
+          setAutoMessage(result.message);
+          if (result.ran) router.refresh();
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAutoMessage(
+            error instanceof Error ? error.message : "Lỗi khi tự chạy."
+          );
+        }
+      } finally {
+        workingRef.current = false;
+      }
+    };
+
+    tick();
+    const timer = setInterval(tick, 6500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [auto, company.id, router]);
+
+  const handlePlan = async () => {
+    if (!aiReady || planning) return;
+    setPlanning(true);
+    setAutoMessage(null);
+    try {
+      const result = await planCompanyTasks(company.id);
+      setAutoMessage(result.message);
+      router.refresh();
+    } catch (error) {
+      setAutoMessage(
+        error instanceof Error ? error.message : "Lỗi khi lập kế hoạch."
+      );
+    } finally {
+      setPlanning(false);
+    }
+  };
+
+  const handleAudit = async () => {
+    if (!aiReady || auditing) return;
+    setAuditing(true);
+    setAutoMessage(null);
+    try {
+      const result = await runCompanyAudit(company.id);
+      setAutoMessage(result.message);
+      router.refresh();
+    } catch (error) {
+      setAutoMessage(
+        error instanceof Error ? error.message : "Lỗi khi CEO kiểm tra."
+      );
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  const workflowAgent =
+    selected ??
+    agents.find((agent) =>
+      tasks.some(
+        (task) =>
+          task.agent_id === agent.id &&
+          (task.status === "running" || task.status === "review")
+      )
+    ) ??
+    agents[0] ??
+    null;
+
+  const workflowTask = workflowAgent
+    ? tasks.find(
+        (task) =>
+          task.agent_id === workflowAgent.id &&
+          ["running", "review", "queued", "failed"].includes(task.status)
+      ) ??
+      tasks.find((task) => task.agent_id === workflowAgent.id) ??
+      null
+    : null;
+
   const focusedTasks = selectedId
     ? tasks.filter((task) => task.agent_id === selectedId)
     : tasks;
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div style={view === "tree" ? DARK_WORKSPACE_STYLE : undefined}
+      className={`${view === "tree" ? "workspace-dark" : ""} flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-700 bg-ink-900/70 px-3 py-2`}>
+        <div className="flex items-center gap-2">
+          <Eyebrow>Không gian điều hành</Eyebrow>
+          <span className="font-mono text-[10px] text-fog-600">
+            {view === "tree" ? "Multi-Agent Workspace" : "Văn phòng 3D"}
+          </span>
+        </div>
+        <div className="flex overflow-hidden rounded-md border border-ink-600">
+          <button
+            type="button"
+            onClick={() => setView("tree")}
+            className={
+              view === "tree"
+                ? "bg-signal-500 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-[#241503]"
+                : "px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
+            }
+          >
+            Multi-Agent 2D
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("3d")}
+            className={
+              view === "3d"
+                ? "bg-signal-500 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-[#241503]"
+                : "px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
+            }
+          >
+            Văn phòng 3D
+          </button>
+        </div>
+      </div>
+
+      {view === "tree" ? (
+        <AgentWorkspace2D
+          company={company}
+          agents={agents}
+          tasks={tasks}
+          reports={reports}
+          channels={channels}
+          handoffs={handoffs}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          tokenUsage={tokenUsage}
+          aiReady={aiReady}
+          auto={auto}
+          onToggleAuto={() => {
+            setAuto((value) => !value);
+            setAutoMessage(null);
+          }}
+          autoMessage={autoMessage}
+          planning={planning}
+          auditing={auditing}
+          onPlan={handlePlan}
+          onAudit={handleAudit}
+        />
+      ) : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="overflow-hidden rounded-xl border border-ink-700 bg-ink-850">
           <header className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-700 px-4 py-3">
             <div>
@@ -111,6 +316,52 @@ export function CompanyWorkspace({
               >
                 {spinning ? "Dừng xoay" : "Tự xoay"}
               </button>
+              <button
+                type="button"
+                disabled={!aiReady || auditing}
+                onClick={handleAudit}
+                className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100 disabled:opacity-50"
+                title={
+                  aiReady
+                    ? "CEO kiểm tra toàn công ty và lưu báo cáo"
+                    : "Cần API key AI để CEO kiểm tra"
+                }
+              >
+                {auditing ? "Đang kiểm tra…" : "CEO kiểm tra"}
+              </button>
+              <button
+                type="button"
+                disabled={!aiReady || planning}
+                onClick={handlePlan}
+                className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100 disabled:opacity-50"
+                title={
+                  aiReady
+                    ? "CEO tự lập kế hoạch và giao việc cho các AI"
+                    : "Cần API key AI để CEO lập kế hoạch"
+                }
+              >
+                {planning ? "Đang lập…" : "CEO lập kế hoạch"}
+              </button>
+              <button
+                type="button"
+                disabled={!aiReady}
+                onClick={() => {
+                  setAuto((value) => !value);
+                  setAutoMessage(null);
+                }}
+                className={
+                  auto
+                    ? "rounded-md border border-ok-400/50 bg-ok-400/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-ok-400"
+                    : "rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
+                }
+                title={
+                  aiReady
+                    ? "AI tự chạy từng bước của dây chuyền. Tốn ngân sách AI, tắt bất cứ lúc nào."
+                    : "Chưa có API key AI — thêm OPENAI_API_KEY / GOOGLE_API_KEY vào .env.local rồi khởi động lại server."
+                }
+              >
+                {auto ? "Tự động: BẬT" : "Tự động: TẮT"}
+              </button>
               <div className="flex overflow-hidden rounded-md border border-ink-600">
                 <button
                   type="button"
@@ -136,10 +387,27 @@ export function CompanyWorkspace({
                 </button>
               </div>
             </div>
+            {!aiReady && (
+              <p className="mt-1 text-right text-[11px] text-warn-400">
+                Chưa có API key AI — thêm GOOGLE_API_KEY/OPENAI_API_KEY vào
+                .env.local để bật tự động.
+              </p>
+            )}
+            {autoMessage && (
+              <p className="mt-1 text-right text-[11px] text-fog-600">
+                {autoMessage}
+              </p>
+            )}
           </header>
 
           <div className="relative h-[540px]">
-            {agents.length === 0 ? (
+            {headless ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-fog-600">
+                  Autopilot mode · 3D tắt để chạy nền
+                </p>
+              </div>
+            ) : agents.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
                 <p className="font-display text-sm font-semibold text-fog-100">
                   Công ty chưa có AI nào
@@ -159,10 +427,11 @@ export function CompanyWorkspace({
                   title={company.name}
                   dark={dark}
                   handoffs={handoffs}
+                  leaderId={leaderId}
                 />
                 <p className="pointer-events-none absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.18em] text-fog-600">
-                  Kéo để xoay · lăn chuột để zoom · bấm vào robot để xem việc ·
-                  robot cầm tệp = đang giao việc
+                  Tự động: CEO tự lập kế hoạch khi hàng đợi trống · robot cầm
+                  tệp = đang giao việc · tầng cao = hiệu suất cao
                 </p>
               </>
             )}
@@ -215,6 +484,41 @@ export function CompanyWorkspace({
                       {selected.max_tokens_per_run.toLocaleString("vi-VN")}
                     </dd>
                   </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Hạn mức token/ngày</dt>
+                    <dd className="font-mono text-fog-300">
+                      {selected.daily_token_budget.toLocaleString("vi-VN")}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Token đã dùng hôm nay</dt>
+                    <dd className="font-mono text-fog-300">
+                      {(tokenUsage[selected.id] ?? 0).toLocaleString("vi-VN")} /{" "}
+                      {selected.daily_token_budget.toLocaleString("vi-VN")}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Tầng / hạng</dt>
+                    <dd className="font-mono text-fog-300">
+                      T{selected.tier} · {tierMeta(selected.tier).name}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Lương đã tạo</dt>
+                    <dd className="font-mono text-ok-400">
+                      ${Number(selected.earnings_usd).toFixed(2)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Điểm hiệu suất</dt>
+                    <dd className="font-mono text-fog-300">{selected.score}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-fog-600">Việc duyệt / bị từ chối</dt>
+                    <dd className="font-mono text-fog-300">
+                      {selected.tasks_completed} / {selected.tasks_failed}
+                    </dd>
+                  </div>
                 </dl>
 
                 {selected.system_prompt && (
@@ -225,6 +529,58 @@ export function CompanyWorkspace({
                     </pre>
                   </div>
                 )}
+
+                <form
+                  action={updateAgentBudget}
+                  className="flex flex-wrap items-end gap-2 rounded-md border border-ink-700 bg-ink-900 p-3"
+                >
+                  <input type="hidden" name="id" value={selected.id} />
+                  <input
+                    type="hidden"
+                    name="company_id"
+                    value={company.id}
+                  />
+                  <label className="flex-1">
+                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-fog-600">
+                      Model free
+                    </span>
+                    <input
+                      name="model"
+                      list="agent-free-models"
+                      defaultValue={selected.model ?? ""}
+                      placeholder="deepseek-v4.1-flash-free"
+                      className="w-full rounded-md border border-ink-700 bg-ink-850 px-2 py-1.5 font-mono text-xs text-fog-100 outline-none focus:border-ember-500/60"
+                    />
+                    <datalist id="agent-free-models">
+                      {OPENCODE_FREE_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.label} · {model.use}
+                        </option>
+                      ))}
+                    </datalist>
+                  </label>
+                  <label className="flex-1">
+                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-fog-600">
+                      Hạn mức token/ngày
+                    </span>
+                    <input
+                      name="daily_token_budget"
+                      type="number"
+                      min={500}
+                      max={200000}
+                      step={500}
+                      defaultValue={selected.daily_token_budget}
+                      className="w-full rounded-md border border-ink-700 bg-ink-850 px-2 py-1.5 font-mono text-xs text-fog-100 outline-none focus:border-ember-500/60"
+                    />
+                  </label>
+                  <SubmitButton
+                    size="sm"
+                    variant="secondary"
+                    pendingText="Đang lưu…"
+                  >
+                    Lưu
+                  </SubmitButton>
+                </form>
 
                 <form action={removeAgent}>
                   <input type="hidden" name="id" value={selected.id} />
@@ -256,13 +612,63 @@ export function CompanyWorkspace({
               key={selectedId ?? "none"}
               companyId={company.id}
               agents={agents}
+              channels={channels}
               defaultAgentId={selectedId}
             />
           </Panel>
         </div>
       </div>
 
+      {workflowAgent && (
+        <Panel
+          eyebrow="Dây chuyền của AI"
+          title={`${workflowAgent.name} · ${workflowAgent.title ?? workflowAgent.name}`}
+          bodyClassName="p-4"
+        >
+          <WorkflowCanvas
+            agent={workflowAgent}
+            task={workflowTask}
+            agents={agents}
+          />
+        </Panel>
+      )}
+        </>
+      )}
+
+      <div
+        style={view === "tree" ? DARK_WORKSPACE_STYLE : undefined}
+        className={
+          view === "tree"
+            ? "workspace-dark space-y-6 rounded-xl bg-ink-950 p-3"
+            : "space-y-6"
+        }
+      >
       <Panel
+        id="reports"
+        eyebrow="Báo cáo CEO"
+        title={
+          reports.length > 0
+            ? `Kiểm tra toàn công ty · ${new Date(
+                reports[0].created_at
+              ).toLocaleString("vi-VN")}`
+            : "Chưa có báo cáo CEO"
+        }
+        bodyClassName="p-4"
+      >
+        {reports.length > 0 ? (
+          <pre className="max-h-80 overflow-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-fog-100">
+            {reports[0].content}
+          </pre>
+        ) : (
+          <p className="text-sm text-fog-500">
+            Bấm “CEO kiểm tra” ở trên để CEO đọc số liệu thật (việc, lương, ngân
+            sách, doanh thu) và báo cáo tình hình công ty.
+          </p>
+        )}
+      </Panel>
+
+      <Panel
+        id="tasks"
         eyebrow="Tiến độ"
         title={
           selected
@@ -282,7 +688,80 @@ export function CompanyWorkspace({
         }
         bodyClassName="p-0"
       >
-        <TaskList tasks={focusedTasks} agentNames={agentNames} />
+        <TaskList
+          tasks={focusedTasks}
+          agentNames={agentNames}
+          channels={channels}
+        />
+      </Panel>
+
+      <Panel
+        id="leaderboard"
+        eyebrow="Kinh tế AI"
+        title="Bảng lương & thăng tầng"
+        bodyClassName="p-0"
+      >
+        {leaderboard.length === 0 ? (
+          <p className="p-4 text-sm text-fog-500">Chưa có AI nào trong công ty.</p>
+        ) : (
+          <ul className="divide-y divide-ink-700">
+            {leaderboard.slice(0, 10).map((agent, index) => {
+              const meta = tierMeta(agent.tier);
+              const total = agent.tasks_completed + agent.tasks_failed;
+              const winRate =
+                total > 0
+                  ? Math.round((agent.tasks_completed / total) * 100)
+                  : 0;
+              const isLeader = leaderId === agent.id;
+              return (
+                <li
+                  key={agent.id}
+                  className="flex items-center gap-3 px-4 py-2.5"
+                >
+                  <span className="w-7 font-mono text-xs text-fog-600">
+                    #{index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(agent.id)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className="block truncate text-sm text-fog-100">
+                      {agent.name}
+                      {isLeader && (
+                        <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-signal-500">
+                          TOP
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="block text-xs"
+                      style={{ color: meta.color }}
+                    >
+                      Tầng {agent.tier} · {meta.name} · {agent.score} điểm
+                    </span>
+                  </button>
+                  <span className="hidden font-mono text-xs tabular-nums text-fog-500 sm:block">
+                    {agent.tasks_completed} đạt / {agent.tasks_failed} lỗi
+                  </span>
+                  <span className="hidden font-mono text-xs tabular-nums text-fog-500 sm:block">
+                    {winRate}%
+                  </span>
+                  <DataValue className="w-20 text-right text-sm text-ok-400">
+                    ${Number(agent.earnings_usd).toFixed(2)}
+                  </DataValue>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="border-t border-ink-700 px-4 py-2.5 text-xs leading-relaxed text-fog-600">
+          Luật chơi: chỉ việc được con người duyệt mới được trả lương; bị từ
+          chối thì trừ điểm và giảm thưởng. Đủ điểm thì thăng tầng, tụt điểm thì
+          xuống tầng. AI không được tự tiêu tiền, tự phát hành hay vượt quyền.
+          Đơn vị USD là giá trị đầu ra ước tính theo bảng thưởng, chưa phải
+          doanh thu thực tế.
+        </p>
       </Panel>
 
       <div className="flex flex-wrap gap-2">
@@ -295,6 +774,7 @@ export function CompanyWorkspace({
             ● {TASK_STATUSES[status].label}
           </span>
         ))}
+      </div>
       </div>
     </div>
   );

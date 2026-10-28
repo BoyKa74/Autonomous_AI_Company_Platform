@@ -23,6 +23,8 @@ export function Workstation({
   selected,
   onSelect,
   dark,
+  tier,
+  isLeader,
 }: {
   agent: AiAgent;
   position: [number, number, number];
@@ -30,6 +32,8 @@ export function Workstation({
   selected: boolean;
   onSelect: (id: string) => void;
   dark: boolean;
+  tier: number;
+  isLeader: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const paused = agent.status === "paused";
@@ -37,7 +41,9 @@ export function Workstation({
   const screenRef = useRef<THREE.MeshStandardMaterial>(null);
   const rugRef = useRef<THREE.MeshStandardMaterial>(null);
 
-  const labelWidth = Math.max(1.15, agent.name.length * 0.115 + 0.35);
+  const displayName =
+    agent.name.length > 24 ? `${agent.name.slice(0, 22)}…` : agent.name;
+  const labelWidth = Math.max(1.15, displayName.length * 0.115 + 0.35);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -179,7 +185,7 @@ export function Workstation({
           anchorY="middle"
           position={[0, 0.11, 0.02]}
         >
-          {agent.name}
+          {displayName}
         </Text>
         <Text
           font={FONT_REGULAR}
@@ -189,9 +195,21 @@ export function Workstation({
           anchorY="middle"
           position={[0, -0.13, 0.02]}
         >
-          {AGENT_ROLES[agent.role].label.toUpperCase()}
+          T{tier} · {AGENT_ROLES[agent.role].label.toUpperCase()}
           {active ? " · ĐANG LÀM" : paused ? " · TẠM DỪNG" : ""}
         </Text>
+        {isLeader && (
+          <mesh position={[0, 0.55, 0]}>
+            <octahedronGeometry args={[0.13]} />
+            <meshStandardMaterial
+              color="#e0a020"
+              emissive="#cd8615"
+              emissiveIntensity={0.85}
+              metalness={0.5}
+              roughness={0.35}
+            />
+          </mesh>
+        )}
       </Billboard>
 
       {/* vùng bấm */}

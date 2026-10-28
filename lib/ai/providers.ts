@@ -1,3 +1,7 @@
+import {
+  isFreeOpencodeModel,
+  isFreeOpenrouterModel,
+} from "@/lib/ai/free-models";
 import type { ChatInput, ChatOutput, ProviderAdapter } from "@/lib/ai/types";
 
 async function requestJson(
@@ -117,7 +121,7 @@ export const googleProvider: ProviderAdapter = {
   name: "google",
   isConfigured: () =>
     Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
-  model: () => process.env.GOOGLE_MODEL || "gemini-2.5-flash",
+  model: () => process.env.GOOGLE_MODEL || "gemini-3.8-flash",
   async chat({
     messages,
     system,
@@ -169,9 +173,128 @@ export const googleProvider: ProviderAdapter = {
   },
 };
 
+export const groqProvider: ProviderAdapter = {
+  name: "groq",
+  isConfigured: () => Boolean(process.env.GROQ_API_KEY),
+  model: () => process.env.GROQ_MODEL || "qwen/qwen3.8-27b",
+  async chat({
+    messages,
+    system,
+    temperature = 0.7,
+    maxTokens = 4096,
+    model: modelOverride,
+  }: ChatInput): Promise<ChatOutput> {
+    const model = modelOverride || this.model();
+    const data = (await requestJson("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        max_tokens: maxTokens,
+        messages: [
+          ...(system ? [{ role: "system", content: system }] : []),
+          ...messages,
+        ],
+      }),
+    })) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("Groq trả về kết quả rỗng");
+    return {
+      text,
+      model,
+      usage: {
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0,
+      },
+    };
+  },
+};
+
+
+const opencodeSessionId = globalThis.crypto.randomUUID();
+
+export const opencodeProvider: ProviderAdapter = {
+  name: "opencode",
+  isConfigured: () => {
+    if (!process.env.OPENCODE_API_KEY) return false;
+    if (process.env.AI_FREE_ONLY !== "1") return true;
+    const model = process.env.OPENCODE_MODEL ?? "";
+    const base = process.env.OPENCODE_BASE_URL ?? "";
+    return isFreeOpencodeModel(model) && base.includes("/zen/");
+  },
+  model: () => process.env.OPENCODE_MODEL || "deepseek-v4.1-flash",
+  async chat({
+    messages,
+    system,
+    temperature = 0.7,
+    maxTokens = 4096,
+    model: modelOverride,
+  }: ChatInput): Promise<ChatOutput> {
+    const model = modelOverride || this.model();
+    const base =
+      process.env.OPENCODE_BASE_URL ||
+      "https://opencode.ai/inference/go/openai/v1";
+    if (process.env.AI_FREE_ONLY === "1") {
+      if (!base.includes("/zen/")) {
+        throw new Error("OpenCode Go (trả phí) bị chặn — chỉ dùng Zen free.");
+      }
+      if (!isFreeOpencodeModel(model)) {
+        throw new Error(
+          `Model OpenCode "${model}" không nằm trong danh sách free — đã chặn.`
+        );
+      }
+    }
+    const data = (await requestJson(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENCODE_API_KEY}`,
+        "x-opencode-session": opencodeSessionId,
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        max_tokens: maxTokens,
+        messages: [
+          ...(system ? [{ role: "system", content: system }] : []),
+          ...messages,
+        ],
+      }),
+    })) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("OpenCode Go trả về kết quả rỗng");
+    return {
+      text,
+      model,
+      usage: {
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0,
+      },
+    };
+  },
+};
+
 export const openrouterProvider: ProviderAdapter = {
   name: "openrouter",
-  isConfigured: () => Boolean(process.env.OPENROUTER_API_KEY),
+  isConfigured: () => {
+    if (!process.env.OPENROUTER_API_KEY) return false;
+    if (process.env.AI_FREE_ONLY === "1") {
+      return isFreeOpenrouterModel(process.env.OPENROUTER_MODEL ?? "");
+    }
+    return true;
+  },
   model: () => process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
   async chat({
     messages,
@@ -181,6 +304,14 @@ export const openrouterProvider: ProviderAdapter = {
     model: modelOverride,
   }: ChatInput): Promise<ChatOutput> {
     const model = modelOverride || this.model();
+    if (
+      process.env.AI_FREE_ONLY === "1" &&
+      !isFreeOpenrouterModel(model)
+    ) {
+      throw new Error(
+        `Model OpenRouter "${model}" không phải model free — đã chặn.`
+      );
+    }
     const data = (await requestJson("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {

@@ -1,0 +1,315 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "VIC Affiliate — AI Task Workflow (current)",
+    "output": "docs/architecture/current-task-workflow.en.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "lanes": [
+    {
+      "id": "human",
+      "label": "Operator / Human"
+    },
+    {
+      "id": "ceo",
+      "label": "CEO AI"
+    },
+    {
+      "id": "worker",
+      "label": "Specialist / Worker"
+    },
+    {
+      "id": "manager",
+      "label": "Manager review"
+    },
+    {
+      "id": "system",
+      "label": "Free-only + budget guard",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "plan",
+      "label": "Plan",
+      "fromCol": 0,
+      "toCol": 1,
+      "variant": "emphasis"
+    },
+    {
+      "id": "execute",
+      "label": "Execute",
+      "fromCol": 2,
+      "toCol": 2
+    },
+    {
+      "id": "review",
+      "label": "Review",
+      "fromCol": 3,
+      "toCol": 4
+    },
+    {
+      "id": "settle",
+      "label": "Settle",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "groups": [
+    {
+      "id": "budget_gate",
+      "label": "Budget gate",
+      "lane": "system",
+      "fromCol": 1,
+      "toCol": 2,
+      "variant": "security"
+    },
+    {
+      "id": "revision_loop",
+      "label": "1 revision max",
+      "lane": "manager",
+      "fromCol": 3,
+      "toCol": 4,
+      "variant": "dashed"
+    },
+    {
+      "id": "human_gate",
+      "label": "Human approval",
+      "lane": "human",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "security"
+    }
+  ],
+  "mainPath": [
+    "request",
+    "plan",
+    "guard",
+    "allocate",
+    "worker",
+    "check",
+    "manager",
+    "verdict",
+    "human",
+    "settle"
+  ],
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "human",
+      "col": 0,
+      "type": "external",
+      "label": "Human request",
+      "sublabel": "task form",
+      "width": 132
+    },
+    {
+      "id": "plan",
+      "lane": "ceo",
+      "col": 1,
+      "type": "backend",
+      "label": "CEO plans tasks",
+      "sublabel": "assign + token budget",
+      "width": 152
+    },
+    {
+      "id": "guard",
+      "lane": "system",
+      "col": 1,
+      "type": "security",
+      "label": "Free-only + budget",
+      "sublabel": "company / agent / task",
+      "tag": "paid blocked",
+      "width": 152
+    },
+    {
+      "id": "allocate",
+      "lane": "ceo",
+      "col": 2,
+      "type": "backend",
+      "label": "Allocate budget",
+      "sublabel": "reserve · clamp",
+      "width": 140
+    },
+    {
+      "id": "worker",
+      "lane": "worker",
+      "col": 2,
+      "type": "backend",
+      "label": "Worker step",
+      "sublabel": "1 step / call",
+      "width": 132
+    },
+    {
+      "id": "check",
+      "lane": "worker",
+      "col": 3,
+      "type": "messagebus",
+      "label": "All steps done?",
+      "sublabel": "loop until 5/5",
+      "width": 140
+    },
+    {
+      "id": "manager",
+      "lane": "manager",
+      "col": 3,
+      "type": "backend",
+      "label": "Manager review",
+      "sublabel": "approve / changes",
+      "width": 140
+    },
+    {
+      "id": "verdict",
+      "lane": "manager",
+      "col": 4,
+      "type": "security",
+      "label": "Verdict",
+      "sublabel": "max 1 revision",
+      "width": 132
+    },
+    {
+      "id": "human",
+      "lane": "human",
+      "col": 5,
+      "type": "external",
+      "label": "Human approval",
+      "sublabel": "final sign-off",
+      "width": 132
+    },
+    {
+      "id": "settle",
+      "lane": "system",
+      "col": 5,
+      "type": "backend",
+      "label": "Settle outcome",
+      "sublabel": "reward · score · tier",
+      "width": 152
+    }
+  ],
+  "edges": [
+    {
+      "id": "request-plan",
+      "from": "request",
+      "to": "plan",
+      "label": "assign",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "plan-guard",
+      "from": "plan",
+      "to": "guard",
+      "label": "check",
+      "variant": "security",
+      "role": "main"
+    },
+    {
+      "id": "guard-allocate",
+      "from": "guard",
+      "to": "allocate",
+      "label": "pass",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "allocate-worker",
+      "from": "allocate",
+      "to": "worker",
+      "label": "budget",
+      "role": "main"
+    },
+    {
+      "id": "worker-check",
+      "from": "worker",
+      "to": "check",
+      "label": "next",
+      "role": "main"
+    },
+    {
+      "id": "check-worker",
+      "from": "check",
+      "to": "worker",
+      "label": "loop",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "check-manager",
+      "from": "check",
+      "to": "manager",
+      "label": "5/5",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "manager-verdict",
+      "from": "manager",
+      "to": "verdict",
+      "label": "review",
+      "role": "main"
+    },
+    {
+      "id": "verdict-worker",
+      "from": "verdict",
+      "to": "worker",
+      "label": "changes",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "verdict-human",
+      "from": "verdict",
+      "to": "human",
+      "label": "approve",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "human-settle",
+      "from": "human",
+      "to": "settle",
+      "label": "approved",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Free-only + budget",
+      "items": [
+        "Guard runs before every AI call: company, agent, task.",
+        "Company 100k/day · CEO 100k · Manager 20k · Specialist 15k.",
+        "Max 3k/call; task budget is reserved and clamped."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Review gates",
+      "items": [
+        "Manager can request changes once; second verdict goes to human.",
+        "Human approval is required before reward/settlement.",
+        "No auto-publish."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failure path",
+      "items": [
+        "429/quota/task budget → review, no retry loop.",
+        "Circuit breaker stops new tasks when free quota is hit.",
+        "One worker lock; no duplicate autopilot runs."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Current state",
+      "items": [
+        "13 agents live; 10 failed tasks pending cleanup.",
+        "Autopilot off; no AI calls at export time.",
+        "2D workspace default; 3D office toggle."
+      ]
+    }
+  ]
+}

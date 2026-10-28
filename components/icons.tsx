@@ -73,6 +73,14 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export function ArrowLeftIcon(props: IconProps) {
   return (
     <svg {...base(props)}>
@@ -104,6 +112,36 @@ export function ShieldIcon(props: IconProps) {
     <svg {...base(props)}>
       <path d="M12 3l7 3v5c0 4.5-2.8 7.8-7 9-4.2-1.2-7-4.5-7-9V6z" />
       <path d="M9.5 12l1.8 1.8 3.4-3.6" />
+    </svg>
+  );
+}
+
+export function PlugIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M9 3v5M15 3v5" />
+      <path d="M6 8h12v3a6 6 0 0 1-12 0V8z" />
+      <path d="M12 17v4" />
+    </svg>
+  );
+}
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1" />
+      <path d="M4 7v11a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2z" />
+      <circle cx="16.5" cy="14" r="1.2" />
+    </svg>
+  );
+}
+
+export function BookIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v18H7.5A2.5 2.5 0 0 0 5 22V4.5z" />
+      <path d="M5 19.5A2.5 2.5 0 0 1 7.5 17H19" />
+      <path d="M9 6h6M9 10h6" />
     </svg>
   );
 }

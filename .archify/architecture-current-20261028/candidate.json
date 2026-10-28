@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "VIC Affiliate — AI Company Runtime (current)",
+    "output": "docs/architecture/current-ai-company.html",
+    "quality_profile": "showcase",
+    "locale": "vi"
+  },
+  "components": [
+    {
+      "id": "operator",
+      "type": "external",
+      "label": "Operator",
+      "sublabel": "Browser · 2D / 3D",
+      "pos": [40, 40],
+      "size": [120, 60]
+    },
+    {
+      "id": "next",
+      "type": "frontend",
+      "label": "Next.js App",
+      "sublabel": "workspace · server actions",
+      "pos": [220, 40],
+      "size": [170, 70]
+    },
+    {
+      "id": "agents",
+      "type": "backend",
+      "label": "AI Company",
+      "sublabel": "CEO → Manager → Specialist",
+      "pos": [510, 40],
+      "size": [190, 74]
+    },
+    {
+      "id": "router",
+      "type": "security",
+      "label": "AI Router + Budget",
+      "sublabel": "free-only · task caps",
+      "pos": [780, 40],
+      "size": [190, 74]
+    },
+    {
+      "id": "providers",
+      "type": "cloud",
+      "label": "Free AI Providers",
+      "sublabel": "OpenCode · Gemini · Groq · OpenRouter",
+      "pos": [1060, 40],
+      "size": [200, 74]
+    },
+    {
+      "id": "autopilot",
+      "type": "external",
+      "label": "Mac Autopilot",
+      "sublabel": "Playwright · file lock",
+      "pos": [40, 260],
+      "size": [130, 64]
+    },
+    {
+      "id": "skills",
+      "type": "backend",
+      "label": "Skills + SOP",
+      "sublabel": "research · review · storyboard",
+      "pos": [230, 260],
+      "size": [180, 70]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "agents · tasks · cost_ledger",
+      "pos": [510, 260],
+      "size": [190, 70]
+    },
+    {
+      "id": "reach",
+      "type": "external",
+      "label": "Agent Reach",
+      "sublabel": "web · GitHub · YouTube · read-only",
+      "pos": [780, 260],
+      "size": [190, 70]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local Mac runtime",
+      "wraps": ["operator", "next", "autopilot", "skills"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Free-only + budget guard",
+      "wraps": ["router"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "operator-next",
+      "from": "operator",
+      "to": "next",
+      "label": "UI",
+      "variant": "emphasis"
+    },
+    {
+      "id": "next-agents",
+      "from": "next",
+      "to": "agents",
+      "label": "server actions"
+    },
+    {
+      "id": "agents-router",
+      "from": "agents",
+      "to": "router",
+      "label": "AI calls"
+    },
+    {
+      "id": "router-providers",
+      "from": "router",
+      "to": "providers",
+      "label": "free-only"
+    },
+    {
+      "id": "autopilot-next",
+      "from": "autopilot",
+      "to": "next",
+      "label": "drives UI",
+      "variant": "dashed"
+    },
+    {
+      "id": "skills-agents",
+      "from": "skills",
+      "to": "agents",
+      "label": "SOP + gates"
+    },
+    {
+      "id": "agents-db",
+      "from": "agents",
+      "to": "db",
+      "label": "tasks + ledger"
+    },
+    {
+      "id": "agents-reach",
+      "from": "agents",
+      "to": "reach",
+      "label": "research",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Free-only fallback",
+      "items": [
+        "OpenCode Zen free → Google Gemini → Groq → OpenRouter.",
+        "Paid models/providers are blocked at runtime."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Budget & safety",
+      "items": [
+        "Company 100k/day · CEO 100k · Manager 20k · Specialist 15k.",
+        "CEO allocates task budget; max 3k/call; 1 revision.",
+        "1 worker lock + human approval before publishing."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tools / next",
+      "items": [
+        "Agent Reach installed; read-only web research.",
+        "Browser MCP installed; extension needs one Allow.",
+        "MoneyPrinterTurbo + public affiliate site are planned."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Current state",
+      "items": [
+        "13 agents: 1 CEO, 1 manager, 11 specialists.",
+        "2D workspace default; 3D office toggle.",
+        "Autopilot off; no AI calls at export time."
+      ]
+    }
+  ]
+}

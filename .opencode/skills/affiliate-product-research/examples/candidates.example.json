@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Example SaaS A",
+    "category": "software",
+    "price_usd": 49,
+    "commission_pct": 30,
+    "sales_30d": 320,
+    "sales_7d": 80,
+    "competition_score": 4,
+    "content_gap_score": 4,
+    "new_account_signal": 4,
+    "source_url": "https://vendor.example/program",
+    "verified_at": "2026-10-20"
+  },
+  {
+    "name": "Example Hosting B",
+    "category": "hosting",
+    "price_usd": 24,
+    "commission_pct": 15,
+    "sales_30d": 140,
+    "competition_score": 3,
+    "content_gap_score": 3,
+    "new_account_signal": 3,
+    "source_url": "https://host.example/affiliate",
+    "verified_at": "2026-10-18"
+  }
+]

@@ -26,6 +26,7 @@ export function OrgScene(props: {
   title: string;
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
+  leaderId: string | null;
 }) {
   return <OrgCanvas {...props} />;
 }

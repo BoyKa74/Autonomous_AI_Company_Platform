@@ -12,16 +12,40 @@ import {
   companyUpdateSchema,
 } from "@/lib/validators";
 import { COMPANY_TEMPLATES } from "@/lib/company-templates";
+import { isFreeOpencodeModel } from "@/lib/ai/free-models";
 import { PROVIDERS } from "@/lib/ai/router";
 import { estimateTaskCost } from "@/lib/ai/estimate";
 import { AiBudgetError, assertAiBudget, logAiUsage } from "@/lib/ai/budget";
+import {
+  assertInputFits,
+  assertTokenBudget,
+  capMaxTokensForPrompt,
+} from "@/lib/ai/token-budget";
 import { generate } from "@/lib/ai/router";
+import { settleTaskOutcome } from "@/lib/task-settlement";
+import { workflowForAgent } from "@/lib/workflows";
 import type { AiProviderName } from "@/lib/ai/types";
 import type { FormState } from "@/lib/action-state";
-import type { Company } from "@/types/database";
+import type { Company, Json } from "@/types/database";
+
+
+function workflowJson(
+  role: "ceo" | "manager" | "specialist" | "worker" | "super_admin",
+  title: string | null,
+  name: string
+): Json {
+  return workflowForAgent({ role, title, name }) as unknown as Json;
+}
 
 function firstIssue(error: { issues: { message: string }[] }): string {
   return error.issues[0]?.message ?? "Dữ liệu không hợp lệ.";
+}
+
+function defaultDailyTokenBudget(role: string): number {
+  if (role === "ceo") return 100000;
+  if (role === "manager") return 20000;
+  if (role === "worker") return 5000;
+  return 15000;
 }
 
 /* ---------- Công ty ---------- */
@@ -37,6 +61,7 @@ export async function createCompany(
     vertical: formData.get("vertical"),
     mission: formData.get("mission") ?? undefined,
     monthly_budget_usd: formData.get("monthly_budget_usd") || 15,
+    daily_token_budget: formData.get("daily_token_budget") || 100000,
     autonomy_level: formData.get("autonomy_level") || 1,
   });
 
@@ -68,6 +93,7 @@ export async function updateCompany(
     status: formData.get("status"),
     autonomy_level: formData.get("autonomy_level") || 1,
     monthly_budget_usd: formData.get("monthly_budget_usd") || 15,
+    daily_token_budget: formData.get("daily_token_budget") || 100000,
     mission: formData.get("mission") ?? undefined,
   });
 
@@ -121,6 +147,12 @@ export async function installTemplate(formData: FormData) {
       title: template.ceo.title,
       system_prompt: template.ceo.systemPrompt,
       max_tokens_per_run: template.ceo.maxTokensPerRun ?? 4000,
+      daily_token_budget: 100000,
+      workflow: workflowJson(
+        template.ceo.role,
+        template.ceo.title,
+        template.ceo.name
+      ),
     })
     .select("id")
     .single();
@@ -136,6 +168,12 @@ export async function installTemplate(formData: FormData) {
         title: department.manager.title,
         system_prompt: department.manager.systemPrompt,
         max_tokens_per_run: department.manager.maxTokensPerRun ?? 4000,
+        daily_token_budget: 20000,
+        workflow: workflowJson(
+          department.manager.role,
+          department.manager.title,
+          department.manager.name
+        ),
       })
       .select("id")
       .single();
@@ -149,6 +187,8 @@ export async function installTemplate(formData: FormData) {
         title: worker.title,
         system_prompt: worker.systemPrompt,
         max_tokens_per_run: worker.maxTokensPerRun ?? 4000,
+        daily_token_budget: defaultDailyTokenBudget(worker.role),
+        workflow: workflowJson(worker.role, worker.title, worker.name),
       });
     }
   }
@@ -172,19 +212,71 @@ export async function addAgent(
     title: formData.get("title") ?? undefined,
     system_prompt: formData.get("system_prompt") ?? undefined,
     provider: formData.get("provider") ?? undefined,
+    model: formData.get("model") ?? undefined,
     max_tokens_per_run: formData.get("max_tokens_per_run") || 4000,
+    daily_token_budget: formData.get("daily_token_budget") || 15000,
   });
 
   if (!parsed.success) {
     return { status: "error", message: firstIssue(parsed.error) };
   }
 
+  if (
+    parsed.data.model &&
+    process.env.AI_FREE_ONLY === "1" &&
+    !isFreeOpencodeModel(parsed.data.model)
+  ) {
+    return {
+      status: "error",
+      message: "Chỉ được dùng model free trong danh sách OpenCode Zen.",
+    };
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.from("ai_agents").insert(parsed.data);
+  const { error } = await supabase.from("ai_agents").insert({
+    ...parsed.data,
+    provider: parsed.data.model ? null : parsed.data.provider,
+    daily_token_budget:
+      parsed.data.daily_token_budget || defaultDailyTokenBudget(parsed.data.role),
+    workflow: workflowJson(
+      parsed.data.role,
+      parsed.data.title,
+      parsed.data.name
+    ),
+  });
   if (error) return { status: "error", message: error.message };
 
   revalidatePath(`/company/${parsed.data.company_id}`);
   return { status: "success", message: `Đã thêm agent "${parsed.data.name}".` };
+}
+
+export async function updateAgentBudget(formData: FormData) {
+  await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const companyId = String(formData.get("company_id") ?? "");
+  const budget = Math.round(Number(formData.get("daily_token_budget")));
+  const model = String(formData.get("model") ?? "").trim() || null;
+  if (!id || !Number.isFinite(budget) || budget < 500) return;
+  if (
+    model &&
+    process.env.AI_FREE_ONLY === "1" &&
+    !isFreeOpencodeModel(model)
+  ) {
+    throw new Error("Chỉ được dùng model free trong danh sách OpenCode Zen.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("ai_agents")
+    .update({
+      daily_token_budget: Math.min(200_000, budget),
+      model,
+      provider: model ? null : undefined,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/company/${companyId}`);
 }
 
 export async function removeAgent(formData: FormData) {
@@ -210,6 +302,7 @@ export async function createTask(
 
   const parsed = agentTaskSchema.safeParse({
     company_id: formData.get("company_id"),
+    channel_id: formData.get("channel_id") ?? undefined,
     agent_id: formData.get("agent_id"),
     title: formData.get("title"),
     brief: formData.get("brief"),
@@ -231,6 +324,17 @@ export async function createTask(
     return { status: "error", message: "Không tìm thấy agent." };
   }
 
+  if (parsed.data.channel_id) {
+    const { data: channel } = await supabase
+      .from("channels")
+      .select("id")
+      .eq("id", parsed.data.channel_id)
+      .maybeSingle();
+    if (!channel) {
+      return { status: "error", message: "Kênh không hợp lệ." };
+    }
+  }
+
   const defaultModel = agent.provider
     ? PROVIDERS[agent.provider as AiProviderName]?.model() ?? "gpt-4o-mini"
     : process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -240,6 +344,7 @@ export async function createTask(
   const { error } = await supabase.from("agent_tasks").insert({
     owner_id: me.id,
     company_id: parsed.data.company_id,
+    channel_id: parsed.data.channel_id,
     agent_id: parsed.data.agent_id,
     title: parsed.data.title,
     brief: parsed.data.brief,
@@ -302,16 +407,29 @@ export async function runTask(formData: FormData) {
       ownerId: me.id,
       companyId: task.company_id,
     });
+    const tokenBudget = await assertTokenBudget(supabase, {
+      ownerId: me.id,
+      company,
+      agent,
+      task,
+    });
 
     const system = `${agent.system_prompt ?? "Bạn là nhân viên AI."}${companyContext(company)}`;
+    const userContent = task.brief ?? task.title;
+    assertInputFits(tokenBudget, system, userContent);
 
     const result = await generate({
       task: "general",
       provider: (agent.provider as AiProviderName | null) ?? undefined,
       model: agent.model ?? undefined,
       system,
-      maxTokens: agent.max_tokens_per_run,
-      messages: [{ role: "user", content: task.brief ?? task.title }],
+      maxTokens: capMaxTokensForPrompt(
+        agent.max_tokens_per_run,
+        tokenBudget,
+        system,
+        userContent
+      ),
+      messages: [{ role: "user", content: userContent }],
     });
 
     await logAiUsage(supabase, {
@@ -335,12 +453,20 @@ export async function runTask(formData: FormData) {
         status: task.requires_approval ? "review" : "approved",
         result: result.text,
         actual_usd: result.costUsd,
-        actual_tokens: totalTokens,
+        actual_tokens: task.actual_tokens + totalTokens,
         error: result.priced
           ? null
           : "Model chưa có trong bảng giá — chi phí hiển thị 0.",
       })
       .eq("id", task.id);
+
+    if (!task.requires_approval) {
+      await settleTaskOutcome(supabase, {
+        task,
+        ownerId: me.id,
+        outcome: "approved",
+      });
+    }
   } catch (error) {
     const message =
       error instanceof AiBudgetError
@@ -350,7 +476,10 @@ export async function runTask(formData: FormData) {
           : String(error);
     await supabase
       .from("agent_tasks")
-      .update({ status: "failed", error: message.slice(0, 900) })
+      .update({
+        status: error instanceof AiBudgetError ? "review" : "failed",
+        error: message.slice(0, 900),
+      })
       .eq("id", task.id);
   }
 
@@ -359,35 +488,53 @@ export async function runTask(formData: FormData) {
 }
 
 export async function approveTask(formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const id = String(formData.get("id") ?? "");
   const companyId = String(formData.get("company_id") ?? "");
   if (!id) return;
 
   const supabase = await createClient();
-  await supabase
+  const { data: task } = await supabase
     .from("agent_tasks")
-    .update({ status: "approved" })
+    .select("*")
     .eq("id", id)
-    .eq("status", "review");
+    .eq("status", "review")
+    .maybeSingle();
+  if (!task) return;
+
+  await settleTaskOutcome(supabase, {
+    task,
+    ownerId: me.id,
+    outcome: "approved",
+  });
 
   revalidatePath(`/company/${companyId}`);
+  revalidatePath("/company");
 }
 
 export async function rejectTask(formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const id = String(formData.get("id") ?? "");
   const companyId = String(formData.get("company_id") ?? "");
   if (!id) return;
 
   const supabase = await createClient();
-  await supabase
+  const { data: task } = await supabase
     .from("agent_tasks")
-    .update({ status: "rejected" })
+    .select("*")
     .eq("id", id)
-    .eq("status", "review");
+    .eq("status", "review")
+    .maybeSingle();
+  if (!task) return;
+
+  await settleTaskOutcome(supabase, {
+    task,
+    ownerId: me.id,
+    outcome: "rejected",
+  });
 
   revalidatePath(`/company/${companyId}`);
+  revalidatePath("/company");
 }
 
 /* ---------- Ngân sách ---------- */
@@ -417,4 +564,18 @@ export async function updateAiSettings(
 
   revalidatePath("/company");
   return { status: "success", message: "Đã cập nhật ngân sách." };
+}
+
+export async function markTaskPublished(formData: FormData) {
+  await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("agent_tasks")
+    .update({ published_at: new Date().toISOString() })
+    .eq("id", id);
+
+  revalidatePath("/company");
 }

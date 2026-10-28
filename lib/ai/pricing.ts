@@ -23,7 +23,16 @@ const DEFAULT_PRICES: Record<string, ModelPrice> = {
   "claude-sonnet-4": { input: 3, output: 15 },
   "gemini-2.0-flash": { input: 0.1, output: 0.4 },
   "gemini-2.5-flash": { input: 0.3, output: 2.5 },
+  // Gemini 3.8 Flash — free tier, chi phí 0; cập nhật nếu chuyển gói trả phí.
+  "gemini-3.8-flash": { input: 0, output: 0 },
   "gemini-2.5-pro": { input: 1.25, output: 10 },
+  // Groq free tier — chi phí 0; cập nhật nếu chuyển sang gói trả phí.
+  "llama-3.3-70b-versatile": { input: 0, output: 0 },
+  "llama-3.1-8b-instant": { input: 0, output: 0 },
+  "qwen/qwen3-32b": { input: 0, output: 0 },
+  // OpenCode Go — dùng quota gói thuê bao, không tính USD theo token.
+  "deepseek-v4.1-flash": { input: 0, output: 0 },
+  "deepseek-v4.1-flash-free": { input: 0, output: 0 },
 };
 
 function envOverrides(): Record<string, ModelPrice> {

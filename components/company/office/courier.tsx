@@ -9,7 +9,7 @@ const BODY_MID = "#e6ebf3";
 const VISOR = "#2a3342";
 const FOLDER = "#f2c75c";
 
-type Pt = { x: number; z: number };
+type Pt = { x: number; y?: number; z: number };
 
 function buildWalker(from: Pt, to: Pt) {
   const midZ = (from.z + to.z) / 2 + 0.9;
@@ -26,6 +26,8 @@ function buildWalker(from: Pt, to: Pt) {
     segments.push({ a, b, len, start: total });
     total += len;
   }
+  const fromY = from.y ?? 0;
+  const toY = to.y ?? 0;
   return {
     total,
     at(distance: number) {
@@ -37,15 +39,17 @@ function buildWalker(from: Pt, to: Pt) {
           const dx = segment.b.x - segment.a.x;
           const dz = segment.b.z - segment.a.z;
           const norm = Math.hypot(dx, dz) || 1;
+          const traveled = clamped / (total || 1);
           return {
             x: segment.a.x + dx * ratio,
+            y: fromY + (toY - fromY) * traveled,
             z: segment.a.z + dz * ratio,
             dx: dx / norm,
             dz: dz / norm,
           };
         }
       }
-      return { x: to.x, z: to.z, dx: 0, dz: 1 };
+      return { x: to.x, y: toY, z: to.z, dx: 0, dz: 1 };
     },
   };
 }
@@ -99,7 +103,7 @@ export function Courier({
     const point = walker.at(distance);
 
     if (groupRef.current) {
-      groupRef.current.position.set(point.x, 0, point.z);
+      groupRef.current.position.set(point.x, point.y ?? 0, point.z);
       groupRef.current.rotation.y =
         walking || delivering
           ? Math.atan2(point.dx * facing, point.dz * facing)

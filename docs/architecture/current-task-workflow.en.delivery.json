@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "9b46b754-11d9-45f2-b1b2-07ede2535d53",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/Users/maivananhvu/Company/VIC/Vic_affiliet/.archify/workflow-current-task-en-20261028/candidate.json",
+  "output": "/Users/maivananhvu/Company/VIC/Vic_affiliet/docs/architecture/current-task-workflow.en.html",
+  "specification": {
+    "sha256": "eea635b589f6b1c78f282e28468a314b21b24ed3a28adefedf3c890fec778d7f",
+    "bytes": 6470
+  },
+  "artifact": {
+    "sha256": "5dda2d971f8ea5d38b19381fbe95a2a477299da243ce6934bddb72fe0d32976e",
+    "bytes": 849914
+  }
+}

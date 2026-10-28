@@ -6,6 +6,7 @@ import { initialFormState } from "@/lib/action-state";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui/kit";
 import { AGENT_ROLES } from "@/lib/constants";
+import { OPENCODE_FREE_MODELS } from "@/lib/ai/free-models";
 import type { AiAgent } from "@/types/database";
 
 const PROVIDER_OPTIONS = [
@@ -13,6 +14,8 @@ const PROVIDER_OPTIONS = [
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
   { value: "google", label: "Google Gemini" },
+  { value: "groq", label: "Groq" },
+  { value: "opencode", label: "OpenCode Zen (free)" },
   { value: "openrouter", label: "OpenRouter" },
 ];
 
@@ -85,6 +88,26 @@ export function AgentForm({
         </Field>
 
         <Field
+          label="Model free (OpenCode Zen)"
+          htmlFor="agent-model"
+          hint="Để trống = model free mặc định. Chỉ chọn model trong danh sách free."
+        >
+          <Input
+            id="agent-model"
+            name="model"
+            list="opencode-free-models"
+            placeholder="deepseek-v4.1-flash-free"
+          />
+          <datalist id="opencode-free-models">
+            {OPENCODE_FREE_MODELS.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.label} · {model.use}
+              </option>
+            ))}
+          </datalist>
+        </Field>
+
+        <Field
           label="Trần token mỗi lần chạy"
           htmlFor="agent-tokens"
           hint="Giới hạn output để tránh đốt token."
@@ -97,6 +120,22 @@ export function AgentForm({
             max={32000}
             step={256}
             defaultValue={4000}
+          />
+        </Field>
+
+        <Field
+          label="Hạn mức token mỗi ngày"
+          htmlFor="agent-daily-tokens"
+          hint="CEO chia pool này cho các task; hết là dừng."
+        >
+          <Input
+            id="agent-daily-tokens"
+            name="daily_token_budget"
+            type="number"
+            min={500}
+            max={200000}
+            step={500}
+            defaultValue={15000}
           />
         </Field>
       </div>

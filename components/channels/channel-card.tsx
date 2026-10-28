@@ -8,6 +8,7 @@ import {
   Tag,
 } from "@/components/ui/kit";
 import { compactNumber, formatDateTime, signalLevel } from "@/lib/utils";
+import { CHANNEL_NICHES } from "@/lib/constants";
 
 export function ChannelCard({ channel }: { channel: Channel }) {
   return (
@@ -26,6 +27,7 @@ export function ChannelCard({ channel }: { channel: Channel }) {
         </h3>
         <p className="mt-0.5 truncate font-mono text-[11px] text-fog-600">
           {channel.handle || "—"} · {channel.region}
+          {channel.niche ? ` · ${CHANNEL_NICHES[channel.niche] ?? channel.niche}` : ""}
         </p>
       </div>
 
