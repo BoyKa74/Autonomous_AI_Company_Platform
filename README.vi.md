@@ -361,13 +361,11 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Nối public affiliate site và tracking click `/go`.
 - Thêm connector research sản phẩm thật (Kalodata/TikTok Shop hoặc public search).
 - Nối MoneyPrinterTurbo thành worker render video riêng.
-- Bổ sung UI song ngữ (tài liệu đã English-first; UI hiện tại vẫn tiếng Việt).
+- Hoàn thiện i18n cho message backend và workflow template.
 - Thêm template công ty Phim, Kế toán và Phần mềm/Code.
 - Thêm test tự động cho task lifecycle và budget guard.
-- Thêm file LICENSE trước khi publish public open-source.
 
 ## License
 
-Hiện chưa có file `LICENSE`. Cần thêm license rõ ràng (ví dụ MIT hoặc Apache-2.0)
-trước khi phân phối public. Các thành phần/skill bên thứ ba giữ license và
-attribution riêng.
+Phát hành theo [MIT License](LICENSE). Các thành phần/skill bên thứ ba giữ
+license và attribution riêng.

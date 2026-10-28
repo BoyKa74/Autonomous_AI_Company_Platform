@@ -371,14 +371,11 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Wire the public affiliate site and `/go` click tracking.
 - Add a real product research connector (Kalodata/TikTok Shop or public search).
 - Wire MoneyPrinterTurbo as a separate video render worker.
-- Add bilingual UI copy (the documentation is already English-first; UI copy is
-  currently Vietnamese).
+- Finish bilingual coverage for backend action messages and workflow templates.
 - Add company templates for Film, Accounting and Software/Code teams.
 - Add automated tests for the task lifecycle and budget guard.
-- Add a LICENSE file before publishing as a public open-source project.
 
 ## License
 
-No `LICENSE` file is currently present. Add an explicit license (for example MIT
-or Apache-2.0) before distributing this repository publicly. Third-party
-components and skills retain their own licenses and attributions.
+Released under the [MIT License](LICENSE). Third-party components and skills
+retain their own licenses and attributions.
