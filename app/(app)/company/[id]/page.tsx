@@ -18,6 +18,8 @@ import { COMPANY_TEMPLATES } from "@/lib/company-templates";
 import { CompanyControls } from "@/components/company/company-controls";
 import { AgentForm } from "@/components/company/agent-form";
 import { CompanyWorkspace } from "@/components/company/workspace";
+import { CompanyNav } from "@/components/company/company-nav";
+import { getLocale } from "@/lib/i18n/server";
 import {
   DataValue,
   Eyebrow,
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/kit";
 import { COMPANY_STATUSES, COMPANY_VERTICALS } from "@/lib/constants";
 import { ArrowLeftIcon } from "@/components/icons";
+import { tr } from "@/lib/i18n/messages";
 
 export async function generateMetadata({
   params,
@@ -35,7 +38,7 @@ export async function generateMetadata({
   await connection();
   const { id } = await params;
   const company = await getCompany(id);
-  return { title: company?.name ?? "Công ty AI" };
+  return { title: company?.name ?? "AI Company" };
 }
 
 export default async function CompanyDetailPage({
@@ -47,6 +50,8 @@ export default async function CompanyDetailPage({
   const { id } = await params;
   const search = await searchParams;
   const headless = search.headless === "1";
+  const locale = await getLocale();
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
 
   const company = await getCompany(id);
   if (!company) notFound();
@@ -64,7 +69,7 @@ export default async function CompanyDetailPage({
       listTasks({ companyId: id, limit: 50 }),
       getMonthlySpend(supabase, me.id, id),
       listCompanyReports(id, 3),
-      listChannels({}),
+      listChannels({ companyId: id }),
       supabase
         .from("cost_ledger")
         .select("agent_id,input_tokens,output_tokens")
@@ -131,12 +136,12 @@ export default async function CompanyDetailPage({
           className={buttonStyles("ghost", "sm", "-ml-2 text-fog-500")}
         >
           <ArrowLeftIcon className="size-3.5" />
-          Công ty AI
+          {tr(locale, "Công ty AI")}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Eyebrow>{vertical.label}</Eyebrow>
+            <Eyebrow>{tr(locale, vertical.label)}</Eyebrow>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
               {company.name}
             </h1>
@@ -145,9 +150,9 @@ export default async function CompanyDetailPage({
                 className="font-mono text-[10.5px] uppercase tracking-wider"
                 style={{ color: status.color }}
               >
-                {status.label}
+                {tr(locale, status.label)}
               </span>
-              <Tag>Tự chủ cấp {company.autonomy_level}</Tag>
+              <Tag>{tr(locale, "Tự chủ cấp")} {company.autonomy_level}</Tag>
               <Tag>{agents.length} AI</Tag>
             </div>
             {company.mission && (
@@ -159,7 +164,7 @@ export default async function CompanyDetailPage({
 
           <div className="flex flex-wrap gap-3">
             <div className="min-w-56 rounded-lg border border-ink-700 bg-ink-850 p-3">
-              <Eyebrow className="mb-2">Ngân sách tháng</Eyebrow>
+              <Eyebrow className="mb-2">{tr(locale, "Ngân sách tháng")}</Eyebrow>
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <DataValue>${companySpend.toFixed(2)}</DataValue>
                 <span className="font-mono text-xs text-fog-600">
@@ -172,13 +177,13 @@ export default async function CompanyDetailPage({
               />
             </div>
             <div className="min-w-56 rounded-lg border border-ink-700 bg-ink-850 p-3">
-              <Eyebrow className="mb-2">Token hôm nay</Eyebrow>
+              <Eyebrow className="mb-2">{tr(locale, "Token hôm nay")}</Eyebrow>
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <DataValue>
-                  {companyTokenCommitted.toLocaleString("vi-VN")}
+                  {companyTokenCommitted.toLocaleString(numberLocale)}
                 </DataValue>
                 <span className="font-mono text-xs text-fog-600">
-                  / {company.daily_token_budget.toLocaleString("vi-VN")}
+                  / {company.daily_token_budget.toLocaleString(numberLocale)}
                 </span>
               </div>
               <MeterBar
@@ -186,13 +191,17 @@ export default async function CompanyDetailPage({
                 color={tokenBarColor}
               />
               <p className="mt-1.5 font-mono text-[10px] text-fog-600">
-                dùng {companyTokenUsed.toLocaleString("vi-VN")} · đã cấp{" "}
-                {companyTokenReserved.toLocaleString("vi-VN")}
+                {tr(locale, "dùng")}{" "}
+                {companyTokenUsed.toLocaleString(numberLocale)} ·{" "}
+                {tr(locale, "đã cấp")}{" "}
+                {companyTokenReserved.toLocaleString(numberLocale)}
               </p>
             </div>
           </div>
         </div>
       </header>
+
+      <CompanyNav company={company} locale={locale} />
 
       <CompanyWorkspace
         company={company}
@@ -206,24 +215,31 @@ export default async function CompanyDetailPage({
         }))}
         headless={headless}
         tokenUsage={agentTokenUsage}
+        locale={locale}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel eyebrow="Cấu hình" title="Vận hành công ty" bodyClassName="p-5">
+        <Panel
+          id="settings"
+          eyebrow={tr(locale, "Cấu hình")}
+          title={tr(locale, "Vận hành công ty")}
+          bodyClassName="p-5"
+        >
           <CompanyControls
             company={company}
             hasAgents={agents.length > 0}
             hasTemplate={hasTemplate}
+            locale={locale}
           />
         </Panel>
 
         <Panel
           id="agent-form"
-          eyebrow="Nhân sự"
-          title="Thêm AI mới"
+          eyebrow={tr(locale, "Nhân sự")}
+          title={tr(locale, "Thêm AI mới")}
           bodyClassName="p-5"
         >
-          <AgentForm companyId={company.id} agents={agents} />
+          <AgentForm companyId={company.id} agents={agents} locale={locale} />
         </Panel>
       </div>
     </div>

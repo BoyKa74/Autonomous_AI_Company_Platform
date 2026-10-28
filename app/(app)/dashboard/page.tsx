@@ -18,14 +18,19 @@ import {
   CONTENT_STATUSES,
   CONTENT_STATUS_ORDER,
   PLATFORM_ORDER,
+  PLATFORMS,
+  STATUSES,
 } from "@/lib/constants";
 import { compactNumber, formatDateTime, signalLevel } from "@/lib/utils";
 import { PlusIcon } from "@/components/icons";
+import { getLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n/messages";
 
-export const metadata: Metadata = { title: "Bảng điều khiển" };
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   await connection();
+  const locale = await getLocale();
   const [channels, contentItems] = await Promise.all([
     listChannels({}),
     listContentItems({ limit: 300 }),
@@ -50,7 +55,7 @@ export default async function DashboardPage() {
     )
     .slice(0, 5);
 
-  const today = new Intl.DateTimeFormat("vi-VN", {
+  const today = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "vi-VN", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -61,51 +66,57 @@ export default async function DashboardPage() {
     <div className="space-y-6 rise-in">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Trung tâm điều phối</Eyebrow>
+          <Eyebrow>{tr(locale, "Trung tâm điều phối")}</Eyebrow>
           <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
-            Bảng điều khiển
+            {tr(locale, "Bảng điều khiển")}
           </h1>
           <p className="mt-1 text-sm text-fog-500">{today}</p>
         </div>
         <Link href="/channels/new" className={buttonStyles("primary")}>
           <PlusIcon className="size-3.5" />
-          Thêm kênh
+          {tr(locale, "Thêm kênh")}
         </Link>
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatModule label="Tổng kênh" value={stats.total} />
+        <StatModule label={tr(locale, "Tổng kênh")} value={stats.total} />
         <StatModule
-          label="Đang phát sóng"
+          label={tr(locale, "Đang phát sóng")}
           value={stats.active}
-          note={`${stats.total - stats.active} kênh tạm nghỉ`}
+          note={`${stats.total - stats.active} ${tr(
+            locale,
+            stats.total - stats.active === 1 ? "channel paused" : "channels paused"
+          )}`}
         />
         <StatModule
-          label="Kênh bán hàng"
+          label={tr(locale, "Kênh bán hàng")}
           value={stats.commerce}
-          note="Shopee · TikTok Shop · sàn khác"
+          note={tr(locale, "Shopee · TikTok Shop · sàn khác")}
         />
         <StatModule
-          label="Tổng follower"
+          label={tr(locale, "Tổng follower")}
           value={compactNumber(stats.followers)}
-          note="trên toàn hệ sinh thái"
+          note={tr(locale, "trên toàn hệ sinh thái")}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <Panel
-          eyebrow="Tín hiệu"
-          title="Theo nền tảng"
+          eyebrow={tr(locale, "Tín hiệu")}
+          title={tr(locale, "Theo nền tảng")}
           bodyClassName="p-0"
         >
           {stats.total === 0 ? (
             <div className="p-4">
               <EmptyState
-                title="Chưa có kênh nào"
-                description="Thêm kênh đầu tiên để bảng tín hiệu bắt đầu hoạt động."
+                title={tr(locale, "Chưa có kênh nào")}
+                description={tr(
+                  locale,
+                  "Thêm kênh đầu tiên để bảng tín hiệu bắt đầu hoạt động."
+                )}
                 action={
                   <Link href="/channels/new" className={buttonStyles("primary", "sm")}>
-                    Thêm kênh đầu tiên
+                    {tr(locale, "Thêm kênh đầu tiên")}
                   </Link>
                 }
               />
@@ -120,7 +131,11 @@ export default async function DashboardPage() {
                       key={platform}
                       className="flex items-center gap-4 px-4 py-3"
                     >
-                      <PlatformChip platform={platform} className="w-24 justify-start" />
+                      <PlatformChip
+                        platform={platform}
+                        label={tr(locale, PLATFORMS[platform].short)}
+                        className="w-24 justify-start"
+                      />
                       <DataValue className="w-8 text-right">
                         {row.count}
                       </DataValue>
@@ -140,17 +155,20 @@ export default async function DashboardPage() {
         </Panel>
 
         <div className="space-y-6">
-          <Panel eyebrow="Dòng nội dung" title="Kho nội dung">
+          <Panel
+            eyebrow={tr(locale, "Dòng nội dung")}
+            title={tr(locale, "Kho nội dung")}
+          >
             {contentTotal === 0 ? (
               <p className="text-sm text-fog-500">
-                Chưa có nội dung nào.{" "}
+                {tr(locale, "Chưa có nội dung nào.")}{" "}
                 <Link
-                  href="/ai"
+                  href="/company"
                   className="font-medium text-signal-500 hover:text-signal-400"
                 >
-                  Viết cùng AI Studio
+                  {tr(locale, "Mở Công ty AI")}
                 </Link>{" "}
-                để bắt đầu.
+                {tr(locale, "để bắt đầu.")}
               </p>
             ) : (
               <>
@@ -163,7 +181,7 @@ export default async function DashboardPage() {
                           width: `${(count / contentTotal) * 100}%`,
                           backgroundColor: CONTENT_STATUSES[status].color,
                         }}
-                        title={`${CONTENT_STATUSES[status].label}: ${count}`}
+                        title={`${tr(locale, CONTENT_STATUSES[status].label)}: ${count}`}
                       />
                     ) : null
                   )}
@@ -181,7 +199,7 @@ export default async function DashboardPage() {
                             backgroundColor: CONTENT_STATUSES[status].color,
                           }}
                         />
-                        {CONTENT_STATUSES[status].label}
+                        {tr(locale, CONTENT_STATUSES[status].label)}
                       </span>
                       <DataValue className="text-xs">{count}</DataValue>
                     </li>
@@ -191,9 +209,15 @@ export default async function DashboardPage() {
             )}
           </Panel>
 
-          <Panel eyebrow="Hoạt động" title="Kênh cập nhật gần đây" bodyClassName="p-0">
+          <Panel
+            eyebrow={tr(locale, "Hoạt động")}
+            title={tr(locale, "Kênh cập nhật gần đây")}
+            bodyClassName="p-0"
+          >
             {recentChannels.length === 0 ? (
-              <p className="p-4 text-sm text-fog-500">Chưa có kênh nào.</p>
+              <p className="p-4 text-sm text-fog-500">
+                {tr(locale, "Chưa có kênh nào.")}
+              </p>
             ) : (
               <ul className="divide-y divide-ink-700">
                 {recentChannels.map((channel) => (
@@ -202,13 +226,20 @@ export default async function DashboardPage() {
                       href={`/channels/${channel.id}`}
                       className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-ink-800"
                     >
-                      <PlatformChip platform={channel.platform} withDot={false} />
+                      <PlatformChip
+                        platform={channel.platform}
+                        label={tr(locale, PLATFORMS[channel.platform].short)}
+                        withDot={false}
+                      />
                       <span className="min-w-0 flex-1 truncate text-sm text-fog-100">
                         {channel.name}
                       </span>
-                      <StatusChip status={channel.status} />
+                      <StatusChip
+                        status={channel.status}
+                        label={tr(locale, STATUSES[channel.status].label)}
+                      />
                       <span className="hidden font-mono text-[11px] tabular-nums text-fog-600 sm:block">
-                        {formatDateTime(channel.updated_at)}
+                        {formatDateTime(channel.updated_at, locale)}
                       </span>
                     </Link>
                   </li>
@@ -222,7 +253,7 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap gap-2">
         <Tag>AI router</Tag>
         <Tag>Supabase RLS</Tag>
-        <Tag>Phase 1 · quản lý kênh</Tag>
+        <Tag>{tr(locale, "Phase 1 · quản lý kênh")}</Tag>
       </div>
     </div>
   );

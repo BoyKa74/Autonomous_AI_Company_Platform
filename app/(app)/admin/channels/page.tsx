@@ -4,28 +4,32 @@ import { connection } from "next/server";
 import { listAllChannelsWithOwner } from "@/lib/data";
 import { DataValue, Panel, PlatformChip, StatusChip, Tag } from "@/components/ui/kit";
 import { compactNumber, formatDateTime } from "@/lib/utils";
+import { getLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n/messages";
+import { PLATFORMS, STATUSES } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "Kênh toàn hệ thống" };
+export const metadata: Metadata = { title: "All channels" };
 
 export default async function AdminChannelsPage() {
   await connection();
+  const locale = await getLocale();
   const channels = await listAllChannelsWithOwner();
 
   return (
     <Panel
-      eyebrow="Toàn hệ thống"
-      title={`${channels.length} kênh`}
+      eyebrow={tr(locale, "Toàn hệ thống")}
+      title={`${channels.length} ${tr(locale, "kênh")}`}
       bodyClassName="p-0"
     >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
             <tr className="border-b border-ink-700 font-mono text-[10.5px] uppercase tracking-[0.14em] text-fog-600">
-              <th className="px-4 py-2.5 font-medium">Kênh</th>
-              <th className="px-4 py-2.5 font-medium">Nền tảng</th>
-              <th className="px-4 py-2.5 font-medium">Chủ sở hữu</th>
+              <th className="px-4 py-2.5 font-medium">{tr(locale, "Kênh")}</th>
+              <th className="px-4 py-2.5 font-medium">{tr(locale, "Nền tảng")}</th>
+              <th className="px-4 py-2.5 font-medium">{tr(locale, "Chủ sở hữu")}</th>
               <th className="px-4 py-2.5 text-right font-medium">Follower</th>
-              <th className="px-4 py-2.5 text-right font-medium">Cập nhật</th>
+              <th className="px-4 py-2.5 text-right font-medium">{tr(locale, "Cập nhật")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-ink-700">
@@ -39,12 +43,18 @@ export default async function AdminChannelsPage() {
                     {channel.name}
                   </Link>
                   <div className="mt-1 flex items-center gap-2">
-                    <StatusChip status={channel.status} />
+                    <StatusChip
+                      status={channel.status}
+                      label={tr(locale, STATUSES[channel.status].label)}
+                    />
                     <Tag>{channel.region}</Tag>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <PlatformChip platform={channel.platform} />
+                  <PlatformChip
+                    platform={channel.platform}
+                    label={tr(locale, PLATFORMS[channel.platform].short)}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <p className="text-fog-300">
@@ -58,7 +68,7 @@ export default async function AdminChannelsPage() {
                   <DataValue>{compactNumber(channel.followers)}</DataValue>
                 </td>
                 <td className="px-4 py-3 text-right font-mono text-xs text-fog-600">
-                  {formatDateTime(channel.updated_at)}
+                  {formatDateTime(channel.updated_at, locale)}
                 </td>
               </tr>
             ))}

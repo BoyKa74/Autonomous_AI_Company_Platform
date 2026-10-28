@@ -7,12 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "@/lib/action-state";
 
 const loginSchema = z.object({
-  email: z.email("Email không hợp lệ"),
-  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+  email: z.email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const registerSchema = loginSchema.extend({
-  full_name: z.string().trim().min(1, "Nhập tên của bạn").max(120),
+  full_name: z.string().trim().min(1, "Enter your name").max(120),
 });
 
 function safeNext(raw: FormDataEntryValue | null): string {
@@ -24,19 +24,19 @@ function safeNext(raw: FormDataEntryValue | null): string {
 function translateAuthError(message: string): string {
   const normalized = message.toLowerCase();
   if (normalized.includes("invalid login credentials")) {
-    return "Email hoặc mật khẩu không đúng.";
+    return "Incorrect email or password.";
   }
   if (normalized.includes("already registered")) {
-    return "Email này đã được đăng ký. Hãy đăng nhập.";
+    return "This email is already registered. Sign in instead.";
   }
   if (normalized.includes("email not confirmed")) {
-    return "Email chưa được xác nhận. Kiểm tra hộp thư của bạn.";
+    return "Email is not confirmed yet. Check your inbox.";
   }
   if (normalized.includes("password should be")) {
-    return "Mật khẩu chưa đủ mạnh (tối thiểu 6 ký tự).";
+    return "Password is too weak (minimum 6 characters).";
   }
   if (normalized.includes("rate limit")) {
-    return "Bạn thao tác quá nhanh. Thử lại sau ít phút.";
+    return "Too many attempts. Try again in a few minutes.";
   }
   return message;
 }
@@ -53,7 +53,7 @@ export async function login(
   if (!parsed.success) {
     return {
       status: "error",
-      message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.",
+      message: parsed.error.issues[0]?.message ?? "Invalid data.",
     };
   }
 
@@ -81,7 +81,7 @@ export async function register(
   if (!parsed.success) {
     return {
       status: "error",
-      message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.",
+      message: parsed.error.issues[0]?.message ?? "Invalid data.",
     };
   }
 
@@ -102,7 +102,7 @@ export async function register(
     return {
       status: "success",
       message:
-        "Tài khoản đã tạo. Mở email để xác nhận, sau đó quay lại đăng nhập.",
+        "Account created. Confirm your email, then sign in.",
     };
   }
 

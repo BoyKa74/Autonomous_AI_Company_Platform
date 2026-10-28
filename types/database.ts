@@ -35,7 +35,7 @@ export type ContentStatus =
   | "published"
   | "archived";
 
-export type ProfileRole = "user" | "admin";
+export type ProfileRole = "user" | "admin" | "super_admin";
 
 export type MediaKind = "music" | "voice" | "video" | "image" | "subtitle";
 
@@ -112,6 +112,7 @@ export type Database = {
         Row: {
           id: string;
           owner_id: string;
+          company_id: string | null;
           name: string;
           platform: ChannelPlatform;
           handle: string | null;
@@ -133,6 +134,7 @@ export type Database = {
         Insert: {
           id?: string;
           owner_id: string;
+          company_id?: string | null;
           name: string;
           platform: ChannelPlatform;
           handle?: string | null;
@@ -154,6 +156,7 @@ export type Database = {
         Update: {
           id?: string;
           owner_id?: string;
+          company_id?: string | null;
           name?: string;
           platform?: ChannelPlatform;
           handle?: string | null;

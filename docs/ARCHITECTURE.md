@@ -90,6 +90,40 @@ Open task budgets are reserved so repeated planning cannot over-allocate. The
 ledger records actual provider input/output tokens and cost. Paid providers and
 paid model overrides are rejected while `AI_FREE_ONLY=1`.
 
+## Roles
+
+| Role | Scope |
+| --- | --- |
+| `super_admin` | Platform owner: manages admins, sees all workspaces, only role for `/admin` and role changes |
+| `admin` | Workspace owner: creates/manages own AI companies, agents, channels, knowledge and budgets |
+| `user` | Member/viewer; no workspace data until a membership model is added |
+
+`owner_id` is the tenant boundary. `is_admin()` in SQL means “platform
+super_admin” for global RLS bypass; `is_workspace_admin()` allows admin and
+super_admin to create companies/agents/channels. A trigger blocks non-super_admin
+role changes.
+
+## Company boundaries
+
+The platform is a portfolio of AI companies. Each company owns its agents, tasks,
+budgets and work resources; shared knowledge and provider configuration remain
+platform services.
+
+| Resource | Ownership | Notes |
+| --- | --- | --- |
+| Companies, agents, tasks, budgets | `company_id` | Core company domain |
+| Knowledge | `company_id` nullable | `NULL` = shared knowledge |
+| Channels | `company_id` nullable | Legacy channels start unassigned |
+| Platform accounts | `company_id` | OAuth connections |
+| Revenue / expenses | `company_id` | Company finance |
+| Content / media jobs | via `channel_id` | Channel belongs to company |
+
+The global sidebar contains the portfolio, shared knowledge, AI Studio and
+settings. The company subnav contains Overview, Agents, Tasks, Knowledge,
+Channels, Connections, Revenue and Settings. Company-module pages are currently
+company-context links (`?company=<id>`); nested `/company/[id]/...` routes are a
+future URL cleanup, not a data-boundary change.
+
 ## Workspace modes
 
 - **Multi-Agent 2D** (default): organization tree, status rail, inspector,
@@ -119,4 +153,6 @@ and stop the agent when it is not needed.
 - Kalodata/TikTok Shop product-data connector.
 - MoneyPrinterTurbo video rendering.
 - Bilingual UI copy (documentation is English-first; UI copy is Vietnamese).
+- Company templates for Film, Accounting and Software/Code teams.
+- Nested `/company/[id]/...` module URLs (current modules use company context).
 - Automated end-to-end tests for the task lifecycle.

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/kit";
 import { formatDateTime } from "@/lib/utils";
 import type { MediaJob, MediaJobStatus } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
 const STATUS_META: Record<MediaJobStatus, { label: string; color: string }> = {
   queued: { label: "Chờ xử lý", color: "#8b96a7" },
@@ -38,9 +39,11 @@ const KIND_LABEL: Record<string, string> = {
 export function MediaPanel({
   jobs,
   channels,
+  locale,
 }: {
   jobs: MediaJob[];
   channels: { id: string; name: string }[];
+  locale: Locale;
 }) {
   const [state, action] = useActionState(createMediaJob, initialFormState);
   const [kind, setKind] = useState<"music" | "voice">("music");
@@ -59,19 +62,19 @@ export function MediaPanel({
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <Panel
-        eyebrow="Hàng đợi media"
-        title="Tạo nhạc / giọng đọc"
+        eyebrow={tr(locale, "Hàng đợi media")}
+        title={tr(locale, "Tạo nhạc / giọng đọc")}
         bodyClassName="p-5"
       >
         <form action={action} className="space-y-4">
           {state.status === "error" && (
-            <Alert tone="error">{state.message}</Alert>
+            <Alert tone="error">{tr(locale, state.message)}</Alert>
           )}
           {state.status === "success" && (
-            <Alert tone="success">{state.message}</Alert>
+            <Alert tone="success">{tr(locale, state.message)}</Alert>
           )}
 
-          <Field label="Loại" htmlFor="kind">
+          <Field label={tr(locale, "Loại")} htmlFor="kind">
             <Select
               id="kind"
               name="kind"
@@ -80,18 +83,28 @@ export function MediaPanel({
                 setKind(event.target.value as "music" | "voice")
               }
             >
-              <option value="music">Nhạc nền / bài hát</option>
-              <option value="voice">Giọng đọc tiếng Việt</option>
+              <option value="music">{tr(locale, "Nhạc nền / bài hát")}</option>
+              <option value="voice">{tr(locale, "Giọng đọc tiếng Việt")}</option>
             </Select>
           </Field>
 
           <Field
-            label={kind === "music" ? "Mô tả bài nhạc" : "Nội dung cần đọc"}
+            label={
+              kind === "music"
+                ? tr(locale, "Mô tả bài nhạc")
+                : tr(locale, "Nội dung cần đọc")
+            }
             htmlFor="prompt"
             hint={
               kind === "music"
-                ? "VD: nhạc nền chill, guitar mộc, không lời, 60 giây"
-                : "VD: Xin chào, đây là bản tin công nghệ hôm nay…"
+                ? tr(
+                    locale,
+                    "VD: nhạc nền chill, guitar mộc, không lời, 60 giây"
+                  )
+                : tr(
+                    locale,
+                    "VD: Xin chào, đây là bản tin công nghệ hôm nay…"
+                  )
             }
           >
             <Textarea
@@ -100,8 +113,11 @@ export function MediaPanel({
               rows={kind === "music" ? 4 : 6}
               placeholder={
                 kind === "music"
-                  ? "Mô tả phong cách, nhạc cụ, cảm xúc, thời lượng…"
-                  : "Dán kịch bản voice-over vào đây…"
+                  ? tr(
+                      locale,
+                      "Mô tả phong cách, nhạc cụ, cảm xúc, thời lượng…"
+                    )
+                  : tr(locale, "Dán kịch bản voice-over vào đây…")
               }
               maxLength={8000}
               required
@@ -110,17 +126,20 @@ export function MediaPanel({
 
           {kind === "music" && (
             <>
-              <Field label="Ngôn ngữ hát" htmlFor="vocal_language">
+              <Field label={tr(locale, "Ngôn ngữ hát")} htmlFor="vocal_language">
                 <Select id="vocal_language" name="vocal_language" defaultValue="vi">
-                  <option value="vi">Tiếng Việt</option>
-                  <option value="en">Tiếng Anh</option>
-                  <option value="instrumental">Không lời</option>
+                  <option value="vi">{tr(locale, "Tiếng Việt")}</option>
+                  <option value="en">{tr(locale, "Tiếng Anh")}</option>
+                  <option value="instrumental">{tr(locale, "Không lời")}</option>
                 </Select>
               </Field>
               <Field
-                label="Lời bài hát (tuỳ chọn)"
+                label={tr(locale, "Lời bài hát (tuỳ chọn)")}
                 htmlFor="lyrics"
-                hint='Để trống để AI tự viết. Nhập "[Instrumental]" nếu không lời.'
+                hint={tr(
+                  locale,
+                  "Để trống để AI tự viết. Nhập \"[Instrumental]\" nếu không lời."
+                )}
               >
                 <Textarea
                   id="lyrics"
@@ -135,17 +154,17 @@ export function MediaPanel({
 
           {kind === "voice" && (
             <Field
-              label="Giọng (tuỳ chọn)"
+              label={tr(locale, "Giọng (tuỳ chọn)")}
               htmlFor="voice"
-              hint="Để trống dùng giọng mặc định của VieNeu-TTS."
+              hint={tr(locale, "Để trống dùng giọng mặc định của VieNeu-TTS.")}
             >
-              <Input id="voice" name="voice" maxLength={60} placeholder="VD: nữ miền Nam" />
+              <Input id="voice" name="voice" maxLength={60} placeholder={tr(locale, "VD: nữ miền Nam")} />
             </Field>
           )}
 
-          <Field label="Gắn với kênh" htmlFor="channel_id">
+          <Field label={tr(locale, "Gắn với kênh")} htmlFor="channel_id">
             <Select id="channel_id" name="channel_id" defaultValue="">
-              <option value="">Không gắn kênh</option>
+              <option value="">{tr(locale, "Không gắn kênh")}</option>
               {channels.map((channel) => (
                 <option key={channel.id} value={channel.id}>
                   {channel.name}
@@ -156,23 +175,28 @@ export function MediaPanel({
 
           <SubmitButton
             className="w-full"
-            pendingText="Đang đưa vào hàng đợi…"
+            pendingText={tr(locale, "Đang đưa vào hàng đợi…")}
           >
-            Đưa vào hàng đợi
+            {tr(locale, "Đưa vào hàng đợi")}
           </SubmitButton>
 
           <p className="text-xs text-fog-600">
-            Job chạy trên máy Windows 24/7. Máy tắt thì job nằm chờ, không mất.
+            {tr(
+              locale,
+              "Job chạy trên máy Windows 24/7. Máy tắt thì job nằm chờ, không mất."
+            )}
           </p>
         </form>
       </Panel>
 
       <Panel
-        eyebrow="Gần đây"
-        title="Kết quả"
+        eyebrow={tr(locale, "Gần đây")}
+        title={tr(locale, "Kết quả")}
         actions={
           hasActive ? (
-            <Tag className="text-signal-500">Đang theo dõi…</Tag>
+            <Tag className="text-signal-500">
+              {tr(locale, "Đang theo dõi…")}
+            </Tag>
           ) : undefined
         }
         bodyClassName="p-0"
@@ -180,8 +204,11 @@ export function MediaPanel({
         {jobs.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title="Chưa có job nào"
-              description="Tạo bản nhạc hoặc đoạn voice-over đầu tiên ở khung bên trái."
+              title={tr(locale, "Chưa có job nào")}
+              description={tr(
+                locale,
+                "Tạo bản nhạc hoặc đoạn voice-over đầu tiên ở khung bên trái."
+              )}
             />
           </div>
         ) : (
@@ -193,19 +220,19 @@ export function MediaPanel({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <Eyebrow>{KIND_LABEL[job.kind] ?? job.kind}</Eyebrow>
+                        <Eyebrow>{tr(locale, KIND_LABEL[job.kind] ?? job.kind)}</Eyebrow>
                         <span
                           className="font-mono text-[10.5px] uppercase tracking-wider"
                           style={{ color: meta.color }}
                         >
-                          {meta.label}
+                          {tr(locale, meta.label)}
                         </span>
                       </div>
                       <p className="mt-1 line-clamp-2 text-sm text-fog-100">
                         {job.prompt}
                       </p>
                       <p className="mt-0.5 font-mono text-[10.5px] text-fog-600">
-                        {formatDateTime(job.created_at)}
+                        {formatDateTime(job.created_at, locale)}
                         {job.provider ? ` · ${job.provider}` : ""}
                       </p>
                     </div>
@@ -218,7 +245,7 @@ export function MediaPanel({
                           variant="ghost"
                           pendingText="…"
                         >
-                          Huỷ
+                          {tr(locale, "Huỷ")}
                         </SubmitButton>
                       </form>
                     )}

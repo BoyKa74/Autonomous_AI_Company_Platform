@@ -7,6 +7,7 @@ import { Workstation } from "@/components/company/office/workstation";
 import { Courier } from "@/components/company/office/courier";
 import { AGENT_ROLES } from "@/lib/constants";
 import type { AiAgent } from "@/types/database";
+import type { Locale } from "@/lib/i18n/messages";
 
 const FONT_SEMIBOLD = "/fonts/BeVietnamPro-SemiBold.ttf";
 const FONT_REGULAR = "/fonts/BeVietnamPro-Regular.ttf";
@@ -381,6 +382,7 @@ function Scene({
   dark,
   handoffs,
   leaderId,
+  locale,
 }: {
   agents: AiAgent[];
   activeByAgent: Record<string, number>;
@@ -391,6 +393,7 @@ function Scene({
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
   leaderId: string | null;
+  locale: Locale;
 }) {
   const { positioned, floors, centerY, centerZ, backZ, minX, maxX, maxTierIndex } =
     useMemo(() => computeLayout(agents), [agents]);
@@ -503,6 +506,7 @@ function Scene({
           selected={selectedId === agent.id}
           onSelect={onSelect}
           dark={dark}
+          locale={locale}
         />
       ))}
 
@@ -554,6 +558,7 @@ export function OrgCanvas(props: {
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
   leaderId: string | null;
+  locale: Locale;
 }) {
   return (
     <Canvas

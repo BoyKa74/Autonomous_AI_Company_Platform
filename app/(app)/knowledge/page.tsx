@@ -10,24 +10,36 @@ import {
 } from "@/components/ui/kit";
 import { KNOWLEDGE_CATEGORIES, KNOWLEDGE_DOMAINS } from "@/lib/constants";
 import { PlusIcon } from "@/components/icons";
+import { CompanyNav } from "@/components/company/company-nav";
+import { getLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n/messages";
 import { formatDateTime } from "@/lib/utils";
 import type { KnowledgeCategory } from "@/types/database";
 
-export const metadata: Metadata = { title: "Thư viện tri thức" };
+export const metadata: Metadata = { title: "Knowledge library" };
 
 export default async function KnowledgePage({
   searchParams,
 }: PageProps<"/knowledge">) {
   await connection();
+  const locale = await getLocale();
   const params = await searchParams;
   const category =
     typeof params.category === "string" ? params.category : "all";
   const q = typeof params.q === "string" ? params.q.trim() : "";
 
-  const [docs, companies] = await Promise.all([
-    listKnowledgeDocs({}),
-    listCompanies(),
-  ]);
+  const companies = await listCompanies();
+  const selectedCompany =
+    typeof params.company === "string"
+      ? companies.find((company) => company.id === params.company) ?? null
+      : null;
+  const docs = await listKnowledgeDocs({
+    companyId: selectedCompany?.id ?? null,
+  });
+  const createHref = selectedCompany
+    ? `/knowledge/new?company=${selectedCompany.id}`
+    : "/knowledge/new";
+  const companyQuery = selectedCompany ? `&company=${selectedCompany.id}` : "";
 
   const filtered = docs.filter((doc) => {
     if (category !== "all" && doc.category !== category) return false;
@@ -74,43 +86,57 @@ export default async function KnowledgePage({
     <div className="space-y-6 rise-in">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Bộ nhớ của AI</Eyebrow>
+          <Eyebrow>
+            {selectedCompany ? tr(locale, "Công ty AI") : tr(locale, "Dùng chung")}
+          </Eyebrow>
           <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
-            Thư viện tri thức
+            {selectedCompany
+              ? `${tr(locale, "Tri thức")} · ${selectedCompany.name}`
+              : tr(locale, "Thư viện tri thức dùng chung")}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-fog-500">
-            Mỗi tài liệu thuộc một <b>loại</b> (Prompt, Playbook, SOP…) và một{" "}
-            <b>mảng</b> (Content Facebook, SEO, Sách…). AI tự nạp tài liệu đang
-            bật vào mỗi bước chạy.
+            {tr(
+              locale,
+              "Mỗi tài liệu thuộc một loại (Prompt, Playbook, SOP…) và một mảng (Content Facebook, SEO, Sách…). AI tự nạp tài liệu đang bật vào mỗi bước chạy."
+            )}
           </p>
         </div>
-        <Link href="/knowledge/new" className={buttonStyles("primary")}>
-          <PlusIcon className="size-3.5" />
-          Thêm tài liệu
-        </Link>
+        <div className="flex items-center gap-2">
+          {selectedCompany && (
+            <Link href="/knowledge" className={buttonStyles("ghost", "sm")}>
+              {tr(locale, "Tri thức dùng chung")}
+            </Link>
+          )}
+          <Link href={createHref} className={buttonStyles("primary")}>
+            <PlusIcon className="size-3.5" />
+            {tr(locale, "Thêm tài liệu")}
+          </Link>
+        </div>
       </header>
+
+      {selectedCompany && <CompanyNav company={selectedCompany}  locale={locale} />}
 
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href="/knowledge"
+          href={`/knowledge${companyQuery ? `?${companyQuery.slice(1)}` : ""}`}
           className={buttonStyles(
             category === "all" ? "primary" : "secondary",
             "sm"
           )}
         >
-          Tất cả ({docs.length})
+          {tr(locale, "Tất cả")} ({docs.length})
         </Link>
         {(Object.keys(KNOWLEDGE_CATEGORIES) as KnowledgeCategory[]).map(
           (key) => (
             <Link
               key={key}
-              href={`/knowledge?category=${key}`}
+              href={`/knowledge?category=${key}${companyQuery}`}
               className={buttonStyles(
                 category === key ? "primary" : "secondary",
                 "sm"
               )}
             >
-              {KNOWLEDGE_CATEGORIES[key].label} ({counts[key] ?? 0})
+              {tr(locale, KNOWLEDGE_CATEGORIES[key].label)} ({counts[key] ?? 0})
             </Link>
           )
         )}
@@ -118,25 +144,31 @@ export default async function KnowledgePage({
           {category !== "all" && (
             <input type="hidden" name="category" value={category} />
           )}
+          {selectedCompany && (
+            <input type="hidden" name="company" value={selectedCompany.id} />
+          )}
           <input
             name="q"
             defaultValue={q}
-            placeholder="Tìm trong tri thức…"
+            placeholder={tr(locale, "Tìm trong tri thức…")}
             className="h-8 w-56 rounded-md border border-ink-600 bg-white px-2.5 text-xs text-fog-100 placeholder:text-fog-600 focus:border-signal-500 focus:outline-none"
           />
           <button type="submit" className={buttonStyles("secondary", "sm")}>
-            Tìm
+            {tr(locale, "Tìm")}
           </button>
         </form>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
-          title="Chưa có tài liệu nào"
-          description="Thêm prompt hoặc quy trình đầu tiên — AI sẽ dùng ngay trong lần chạy kế tiếp."
+          title={tr(locale, "Chưa có tài liệu nào")}
+          description={tr(
+              locale,
+              "Thêm prompt hoặc quy trình đầu tiên — AI sẽ dùng ngay trong lần chạy kế tiếp."
+            )}
           action={
-            <Link href="/knowledge/new" className={buttonStyles("primary", "sm")}>
-              Thêm tài liệu
+            <Link href={createHref} className={buttonStyles("primary", "sm")}>
+              {tr(locale, "Thêm tài liệu")}
             </Link>
           }
         />
@@ -152,13 +184,13 @@ export default async function KnowledgePage({
                     <span className="font-display text-sm font-semibold text-fog-100">
                       {domain}
                     </span>
-                    <Tag>{domainDocs.length} tài liệu</Tag>
+                    <Tag>{domainDocs.length} {tr(locale, "tài liệu")}</Tag>
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-wider text-fog-600 group-open:hidden">
-                    mở
+                    {tr(locale, "mở")}
                   </span>
                   <span className="hidden font-mono text-[10px] uppercase tracking-wider text-fog-600 group-open:inline">
-                    đóng
+                    {tr(locale, "đóng")}
                   </span>
                 </summary>
 
@@ -168,7 +200,9 @@ export default async function KnowledgePage({
                     return (
                       <Link
                         key={doc.id}
-                        href={`/knowledge/${doc.id}`}
+                        href={`/knowledge/${doc.id}${
+                          selectedCompany ? `?company=${selectedCompany.id}` : ""
+                        }`}
                         className="group/card flex flex-col gap-1.5 rounded-lg border border-ink-700 bg-white px-3.5 py-3 transition-colors hover:border-ink-500"
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -176,11 +210,11 @@ export default async function KnowledgePage({
                             className="font-mono text-[10px] uppercase tracking-wider"
                             style={{ color: meta.color }}
                           >
-                            {meta.label}
+                            {tr(locale, meta.label)}
                           </span>
                           <span className="flex items-center gap-1">
-                            {doc.pinned && <Tag>ghim</Tag>}
-                            {!doc.active && <Tag>tắt</Tag>}
+                            {doc.pinned && <Tag>{tr(locale, "ghim")}</Tag>}
+                            {!doc.active && <Tag>{tr(locale, "tắt")}</Tag>}
                           </span>
                         </div>
                         <h3 className="line-clamp-1 text-sm font-semibold text-fog-100 group-hover/card:text-signal-500">
@@ -192,16 +226,16 @@ export default async function KnowledgePage({
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           {doc.company_id ? (
                             <Tag>
-                              {companyName.get(doc.company_id) ?? "Công ty"}
+                              {companyName.get(doc.company_id) ?? tr(locale, "Công ty")}
                             </Tag>
                           ) : (
-                            <Tag>Dùng chung</Tag>
+                            <Tag>{tr(locale, "Dùng chung")}</Tag>
                           )}
                           {doc.tags.slice(0, 2).map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                           <span className="ml-auto font-mono text-[10px] text-fog-600">
-                            {formatDateTime(doc.updated_at)}
+                            {formatDateTime(doc.updated_at, locale)}
                           </span>
                         </div>
                       </Link>

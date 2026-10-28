@@ -11,6 +11,7 @@ import {
   type WorkflowStepState,
 } from "@/lib/workflows";
 import { cn } from "@/lib/utils";
+import { tr, type Locale } from "@/lib/i18n/messages";
 import type { AiAgent, AgentTask } from "@/types/database";
 
 const MODE_LABEL: Record<WorkflowStepMode, string> = {
@@ -39,10 +40,12 @@ export function WorkflowCanvas({
   agent,
   task,
   agents,
+  locale,
 }: {
   agent: AiAgent;
   task: AgentTask | null;
   agents: AiAgent[];
+  locale: Locale;
 }) {
   const steps = useMemo(() => stepsForAgent(agent), [agent]);
   const states = useMemo(
@@ -82,14 +85,14 @@ export function WorkflowCanvas({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Tag>{agent.name}</Tag>
-        <Tag>{doneCount}/{steps.length} bước</Tag>
+        <Tag>{doneCount}/{steps.length} {tr(locale, "bước")}</Tag>
         {task ? (
           <span className="min-w-0 truncate text-xs text-fog-500">
             {task.title}
           </span>
         ) : (
           <span className="text-xs text-fog-600">
-            Chưa có nhiệm vụ — tạo hoặc bật tự động để dây chuyền chạy.
+            {tr(locale, "Chưa có nhiệm vụ — tạo hoặc bật tự động để dây chuyền chạy.")}
           </span>
         )}
       </div>
@@ -155,7 +158,7 @@ export function WorkflowCanvas({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] uppercase tracking-wider text-fog-600">
-                    Bước {index + 1}
+                    {tr(locale, "Bước")} {index + 1}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span
@@ -166,7 +169,7 @@ export function WorkflowCanvas({
                       className="font-mono text-[9.5px] uppercase tracking-wider"
                       style={{ color: meta.color }}
                     >
-                      {meta.label}
+                      {tr(locale, meta.label)}
                     </span>
                   </span>
                 </div>
@@ -174,7 +177,7 @@ export function WorkflowCanvas({
                   {step.title}
                 </p>
                 <p className="mt-1 font-mono text-[9.5px] uppercase tracking-wider text-fog-600">
-                  {MODE_LABEL[step.mode]}
+                  {tr(locale, MODE_LABEL[step.mode])}
                 </p>
               </button>
             );
@@ -184,18 +187,18 @@ export function WorkflowCanvas({
 
       <div className="rounded-md border border-ink-700 bg-ink-900 p-3">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <Eyebrow>Bước {selected + 1}</Eyebrow>
+          <Eyebrow>{tr(locale, "Bước")} {selected + 1}</Eyebrow>
           <span className="text-xs text-fog-300">{selectedStep?.title}</span>
           {selectedState?.mediaJobId && <Tag>media job</Tag>}
         </div>
         <pre className="max-h-64 overflow-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-fog-100">
           {selectedState?.output ||
             selectedState?.error ||
-            "Chưa có kết quả cho bước này."}
+            tr(locale, "Chưa có kết quả cho bước này.")}
         </pre>
         {selectedState?.feedback && (
           <p className="mt-2 text-xs text-warn-400">
-            Góp ý đã gửi: {selectedState.feedback}
+            {tr(locale, "Góp ý đã gửi:")} {selectedState.feedback}
           </p>
         )}
       </div>
@@ -203,7 +206,7 @@ export function WorkflowCanvas({
       {canIntervene && task && selectedStep && (
         <details className="rounded-md border border-ink-700 bg-white p-3">
           <summary className="cursor-pointer font-display text-sm font-semibold text-fog-100">
-            Can thiệp bước này
+            {tr(locale, "Can thiệp bước này")}
           </summary>
 
           <div className="mt-3 space-y-4 text-sm">
@@ -211,18 +214,20 @@ export function WorkflowCanvas({
               <input type="hidden" name="task_id" value={task.id} />
               <input type="hidden" name="step_id" value={selectedStep.id} />
               <p className="text-xs text-fog-500">
-                Góp ý cho AI hiện tại rồi chạy lại đúng bước này (các bước sau sẽ
-                chạy lại từ đầu).
+                {tr(
+                  locale,
+                  "Góp ý cho AI hiện tại rồi chạy lại đúng bước này (các bước sau sẽ chạy lại từ đầu)."
+                )}
               </p>
               <textarea
                 name="feedback"
                 rows={2}
                 maxLength={2000}
-                placeholder="VD: hook còn yếu, viết lại mạnh hơn; hoặc số liệu chưa đúng…"
+                placeholder={tr(locale, "VD: hook còn yếu, viết lại mạnh hơn; hoặc số liệu chưa đúng…")}
                 className="w-full rounded-md border border-ink-600 bg-white px-2.5 py-2 text-xs text-fog-100 placeholder:text-fog-600 focus:border-signal-500 focus:outline-none"
               />
-              <SubmitButton size="sm" variant="secondary" pendingText="Đang gửi…">
-                Chạy lại bước này
+              <SubmitButton size="sm" variant="secondary" pendingText={tr(locale, "Đang gửi…")}>
+                {tr(locale, "Chạy lại bước này")}
               </SubmitButton>
             </form>
 
@@ -233,13 +238,13 @@ export function WorkflowCanvas({
               <input type="hidden" name="task_id" value={task.id} />
               <input type="hidden" name="step_id" value={selectedStep.id} />
               <p className="text-xs text-fog-500">
-                Giao lại toàn bộ việc cho AI khác (AI cũ bị trừ 4 điểm).
+                {tr(locale, "Giao lại toàn bộ việc cho AI khác (AI cũ bị trừ 4 điểm).")}
               </p>
               <textarea
                 name="feedback"
                 rows={2}
                 maxLength={2000}
-                placeholder="Góp ý cho AI mới…"
+                placeholder={tr(locale, "Góp ý cho AI mới…")}
                 className="w-full rounded-md border border-ink-600 bg-white px-2.5 py-2 text-xs text-fog-100 placeholder:text-fog-600 focus:border-signal-500 focus:outline-none"
               />
               <div className="flex flex-wrap items-center gap-2">
@@ -249,7 +254,7 @@ export function WorkflowCanvas({
                   required
                   className="h-8 rounded-md border border-ink-600 bg-white px-2 text-xs text-fog-100"
                 >
-                  <option value="">Chọn AI thay thế…</option>
+                  <option value="">{tr(locale, "Chọn AI thay thế…")}</option>
                   {agents
                     .filter(
                       (candidate) =>
@@ -258,12 +263,13 @@ export function WorkflowCanvas({
                     )
                     .map((candidate) => (
                       <option key={candidate.id} value={candidate.id}>
-                        {candidate.name} · {candidate.title ?? candidate.role}
+                        {candidate.name} ·{" "}
+                        {candidate.title ?? tr(locale, candidate.role)}
                       </option>
                     ))}
                 </select>
-                <SubmitButton size="sm" pendingText="Đang giao…">
-                  Giao AI khác
+                <SubmitButton size="sm" pendingText={tr(locale, "Đang giao…")}>
+                  {tr(locale, "Giao AI khác")}
                 </SubmitButton>
               </div>
             </form>
@@ -275,7 +281,7 @@ export function WorkflowCanvas({
               <input type="hidden" name="task_id" value={task.id} />
               <input type="hidden" name="step_id" value={selectedStep.id} />
               <p className="text-xs text-fog-500">
-                Hoặc tự sửa kết quả của bước này rồi cho chạy tiếp.
+                {tr(locale, "Hoặc tự sửa kết quả của bước này rồi cho chạy tiếp.")}
               </p>
               <textarea
                 name="output"
@@ -283,8 +289,8 @@ export function WorkflowCanvas({
                 defaultValue={selectedState?.output ?? ""}
                 className="w-full rounded-md border border-ink-600 bg-white px-2.5 py-2 font-sans text-xs text-fog-100 focus:border-signal-500 focus:outline-none"
               />
-              <SubmitButton size="sm" variant="secondary" pendingText="Đang lưu…">
-                Lưu kết quả sửa
+              <SubmitButton size="sm" variant="secondary" pendingText={tr(locale, "Đang lưu…")}>
+                {tr(locale, "Lưu kết quả sửa")}
               </SubmitButton>
             </form>
           </div>

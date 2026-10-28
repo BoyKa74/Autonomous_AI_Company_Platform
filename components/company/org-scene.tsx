@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { AiAgent } from "@/types/database";
+import type { Locale } from "@/lib/i18n/messages";
 
 const OrgCanvas = dynamic(
   () => import("@/components/company/org-canvas").then((mod) => mod.OrgCanvas),
@@ -10,7 +11,7 @@ const OrgCanvas = dynamic(
     loading: () => (
       <div className="flex h-full items-center justify-center">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-fog-600">
-          Đang mở văn phòng 3D…
+          Opening 3D office…
         </p>
       </div>
     ),
@@ -27,6 +28,7 @@ export function OrgScene(props: {
   dark: boolean;
   handoffs: { fromId: string; toId: string }[];
   leaderId: string | null;
+  locale: Locale;
 }) {
   return <OrgCanvas {...props} />;
 }

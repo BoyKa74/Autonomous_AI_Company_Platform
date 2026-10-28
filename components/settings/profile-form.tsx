@@ -5,13 +5,16 @@ import { updateProfile } from "@/app/actions/admin";
 import { initialFormState } from "@/lib/action-state";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Alert, Field, Input } from "@/components/ui/kit";
+import { t, type Locale } from "@/lib/i18n/messages";
 
 export function ProfileForm({
   defaultName,
   email,
+  locale,
 }: {
   defaultName: string;
   email: string;
+  locale: Locale;
 }) {
   const [state, action] = useActionState(updateProfile, initialFormState);
 
@@ -22,7 +25,7 @@ export function ProfileForm({
         <Alert tone="success">{state.message}</Alert>
       )}
 
-      <Field label="Tên hiển thị" htmlFor="full_name">
+      <Field label={t(locale, "settings.displayName")} htmlFor="full_name">
         <Input
           id="full_name"
           name="full_name"
@@ -32,11 +35,11 @@ export function ProfileForm({
         />
       </Field>
 
-      <Field label="Email" htmlFor="email-display" hint="Email không đổi được ở đây.">
+      <Field label={t(locale, "settings.email")} htmlFor="email-display" hint={t(locale, "settings.emailHint")}>
         <Input id="email-display" value={email} disabled readOnly />
       </Field>
 
-      <SubmitButton pendingText="Đang lưu…">Lưu hồ sơ</SubmitButton>
+      <SubmitButton pendingText={t(locale, "settings.saving")}>{t(locale, "settings.saveProfile")}</SubmitButton>
     </form>
   );
 }

@@ -167,10 +167,12 @@ export function PlatformChip({
   platform,
   withDot = true,
   className,
+  label,
 }: {
   platform: ChannelPlatform;
   withDot?: boolean;
   className?: string;
+  label?: string;
 }) {
   const meta = PLATFORMS[platform];
   return (
@@ -186,7 +188,7 @@ export function PlatformChip({
       }}
     >
       {withDot && <TallyDot color={meta.color} size={6} />}
-      {meta.short}
+      {label ?? meta.short}
     </span>
   );
 }
@@ -194,9 +196,11 @@ export function PlatformChip({
 export function StatusChip({
   status,
   className,
+  label,
 }: {
   status: ChannelStatus;
   className?: string;
+  label?: string;
 }) {
   const meta = STATUSES[status];
   return (
@@ -208,7 +212,7 @@ export function StatusChip({
       style={{ color: meta.color }}
     >
       <TallyDot color={meta.color} live={meta.live} size={7} />
-      {meta.label}
+      {label ?? meta.label}
     </span>
   );
 }

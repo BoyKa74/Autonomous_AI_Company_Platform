@@ -21,8 +21,10 @@ import {
 import { COMPANY_STATUSES, COMPANY_VERTICALS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/utils";
 import { ChevronRightIcon } from "@/components/icons";
+import { getLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n/messages";
 
-export const metadata: Metadata = { title: "Công ty AI" };
+export const metadata: Metadata = { title: "AI Companies" };
 
 function budgetColor(ratio: number): string {
   if (ratio >= 1) return "#cf3f45";
@@ -33,6 +35,8 @@ function budgetColor(ratio: number): string {
 export default async function CompanyPage() {
   await connection();
   const me = await requireUser();
+  const locale = await getLocale();
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
 
   const [overview, companies, ledger, agentCounts] = await Promise.all([
     getBudgetOverview(me.id),
@@ -54,28 +58,33 @@ export default async function CompanyPage() {
     <div className="space-y-6 rise-in">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Tập đoàn AI</Eyebrow>
+          <Eyebrow>{tr(locale, "Tập đoàn AI")}</Eyebrow>
           <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
-            Công ty AI
+            {tr(locale, "Công ty AI")}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-fog-500">
-            Bạn là chủ tịch. Các công ty AI vận hành theo cơ cấu CEO → quản lý →
-            chuyên viên; mọi đầu ra chờ bạn duyệt trước khi phát hành.
+            {tr(
+              locale,
+              "Bạn là chủ tịch. Các công ty AI vận hành theo cơ cấu CEO → quản lý → chuyên viên; mọi đầu ra chờ bạn duyệt trước khi phát hành."
+            )}
           </p>
         </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <Panel
-          eyebrow="Danh sách"
-          title={`${companies.length} công ty`}
+          eyebrow={tr(locale, "Danh sách")}
+          title={`${companies.length} ${tr(locale, "công ty")}`}
           bodyClassName="p-2"
         >
           {companies.length === 0 ? (
             <div className="p-2">
               <EmptyState
-                title="Chưa có công ty AI"
-                description="Tạo công ty Affiliate, Xuất bản hoặc Media để bắt đầu."
+                title={tr(locale, "Chưa có công ty AI")}
+                description={tr(
+                  locale,
+                  "Tạo công ty Affiliate, Xuất bản hoặc Media để bắt đầu."
+                )}
               />
             </div>
           ) : (
@@ -104,7 +113,8 @@ export default async function CompanyPage() {
                           <Tag>{agentCounts[company.id] ?? 0} AI</Tag>
                         </div>
                         <p className="mt-0.5 text-xs text-fog-600">
-                          {vertical.label} · tự chủ cấp {company.autonomy_level}
+                          {tr(locale, vertical.label)} ·{" "}
+                          {tr(locale, "tự chủ cấp")} {company.autonomy_level}
                         </p>
                         <div className="mt-1.5 flex items-center gap-2">
                           <MeterBar
@@ -123,10 +133,10 @@ export default async function CompanyPage() {
                           className="font-mono text-[10px] uppercase tracking-wider"
                           style={{ color: status.color }}
                         >
-                          {status.label}
+                          {tr(locale, status.label)}
                         </span>
                         <span className="flex items-center gap-0.5 font-mono text-[10px] uppercase tracking-wider text-fog-600 transition-colors group-hover:text-signal-500">
-                          Mở
+                          {tr(locale, "Mở")}
                           <ChevronRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                         </span>
                       </div>
@@ -138,14 +148,17 @@ export default async function CompanyPage() {
           )}
         </Panel>
 
-        <Panel eyebrow="Ngân sách" title="Kiểm soát chi phí AI">
+        <Panel
+          eyebrow={tr(locale, "Ngân sách")}
+          title={tr(locale, "Kiểm soát chi phí AI")}
+        >
           <div className="mb-3 flex items-end justify-between gap-4">
             <div>
               <p className="font-mono text-3xl font-semibold tabular-nums text-fog-100">
                 ${overview.systemSpend.toFixed(2)}
               </p>
               <p className="mt-1 text-xs text-fog-600">
-                đã dùng tháng này / trần $
+                {tr(locale, "đã dùng tháng này / trần")} $
                 {overview.settings.monthly_budget_usd.toFixed(2)}
               </p>
             </div>
@@ -159,28 +172,35 @@ export default async function CompanyPage() {
               }
             >
               {ratio >= 1
-                ? "Đã chặn"
+                ? tr(locale, "Đã chặn")
                 : ratio >= overview.settings.alert_threshold_pct / 100
-                  ? "Cảnh báo"
-                  : "An toàn"}
+                  ? tr(locale, "Cảnh báo")
+                  : tr(locale, "An toàn")}
             </Tag>
           </div>
 
           <MeterBar value={Math.min(1, ratio)} color={budgetColor(ratio)} />
 
           <div className="mt-5 border-t border-ink-700 pt-4">
-            <BudgetSettingsForm settings={overview.settings} />
+            <BudgetSettingsForm settings={overview.settings} locale={locale} />
           </div>
         </Panel>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <Panel eyebrow="Chi tiêu" title="Theo công ty" bodyClassName="p-0">
+        <Panel
+          eyebrow={tr(locale, "Chi tiêu")}
+          title={tr(locale, "Theo công ty")}
+          bodyClassName="p-0"
+        >
           {overview.companies.length === 0 ? (
             <div className="p-4">
               <EmptyState
-                title="Chưa có công ty"
-                description="Tạo công ty AI đầu tiên ở khung bên dưới."
+                title={tr(locale, "Chưa có công ty")}
+                description={tr(
+                  locale,
+                  "Tạo công ty AI đầu tiên ở khung bên dưới."
+                )}
               />
             </div>
           ) : (
@@ -215,7 +235,9 @@ export default async function CompanyPage() {
 
           {overview.topAgents.length > 0 && (
             <div className="border-t border-ink-700 px-4 py-3">
-              <Eyebrow className="mb-2">Agent tốn nhất tháng</Eyebrow>
+              <Eyebrow className="mb-2">
+                {tr(locale, "Agent tốn nhất tháng")}
+              </Eyebrow>
               <ul className="space-y-1.5">
                 {overview.topAgents.map((agent) => (
                   <li
@@ -233,10 +255,17 @@ export default async function CompanyPage() {
           )}
         </Panel>
 
-        <Panel eyebrow="Sổ chi phí" title="Giao dịch gần đây" bodyClassName="p-0">
+        <Panel
+          eyebrow={tr(locale, "Sổ chi phí")}
+          title={tr(locale, "Giao dịch gần đây")}
+          bodyClassName="p-0"
+        >
           {ledger.length === 0 ? (
             <p className="p-4 text-sm text-fog-500">
-              Chưa có giao dịch. Mỗi lần AI chạy sẽ được ghi vào sổ này.
+              {tr(
+                locale,
+                "Chưa có giao dịch. Mỗi lần AI chạy sẽ được ghi vào sổ này."
+              )}
             </p>
           ) : (
             <ul className="divide-y divide-ink-700">
@@ -251,14 +280,14 @@ export default async function CompanyPage() {
                       {entry.company?.name ?? "—"}
                     </span>
                     <span className="block font-mono text-[10px] text-fog-600">
-                      {entry.model} · {formatDateTime(entry.created_at)}
+                      {entry.model} · {formatDateTime(entry.created_at, locale)}
                     </span>
                   </span>
                   <span className="font-mono tabular-nums text-fog-500">
                     {(
                       entry.input_tokens + entry.output_tokens
-                    ).toLocaleString("vi-VN")}{" "}
-                    tk
+                    ).toLocaleString(numberLocale)}{" "}
+                    {tr(locale, "tk")}
                   </span>
                   <DataValue className="w-16 text-right text-xs">
                     ${Number(entry.cost_usd).toFixed(4)}
@@ -270,12 +299,18 @@ export default async function CompanyPage() {
         </Panel>
       </div>
 
-      <Panel eyebrow="Công ty mới" title="Tạo công ty AI">
-        <CompanyCreateForm />
+      <Panel
+        eyebrow={tr(locale, "Công ty mới")}
+        title={tr(locale, "Tạo công ty AI")}
+      >
+        <CompanyCreateForm locale={locale} />
         <p className="mt-4 border-t border-ink-700 pt-3 text-xs text-fog-600">
-          Mẹo: tạo công ty → mở chi tiết → bấm{" "}
-          <span className="text-fog-300">Cài cơ cấu mẫu</span> để hệ thống tự
-          dựng CEO + các phòng ban cho ngành đó.
+          {tr(locale, "Mẹo: tạo công ty → mở chi tiết → bấm")}{" "}
+          <span className="text-fog-300">{tr(locale, "Cài cơ cấu mẫu")}</span>{" "}
+          {tr(
+            locale,
+            "để hệ thống tự dựng CEO + các phòng ban cho ngành đó."
+          )}
         </p>
       </Panel>
     </div>

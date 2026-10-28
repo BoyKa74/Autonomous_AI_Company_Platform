@@ -28,6 +28,7 @@ export type ChannelFilters = {
   status?: string;
   region?: string;
   q?: string;
+  companyId?: string | null;
 };
 
 export async function listChannels(
@@ -39,6 +40,12 @@ export async function listChannels(
     .select("*")
     .order("created_at", { ascending: false });
 
+  if (filters.companyId !== undefined) {
+    query =
+      filters.companyId === null
+        ? query.is("company_id", null)
+        : query.eq("company_id", filters.companyId);
+  }
   if (filters.platform && filters.platform !== "all") {
     query = query.eq("platform", filters.platform as ChannelPlatform);
   }
@@ -312,6 +319,7 @@ export async function listRecentLedger(limit = 12) {
 export async function listKnowledgeDocs(filters: {
   category?: string;
   q?: string;
+  companyId?: string | null;
 } = {}): Promise<KnowledgeDoc[]> {
   const supabase = await createClient();
   let query = supabase
@@ -320,6 +328,13 @@ export async function listKnowledgeDocs(filters: {
     .order("pinned", { ascending: false })
     .order("updated_at", { ascending: false });
 
+  if (filters.companyId === null) {
+    query = query.is("company_id", null);
+  } else if (filters.companyId) {
+    query = query.or(
+      `company_id.is.null,company_id.eq.${filters.companyId}`
+    );
+  }
   if (filters.category && filters.category !== "all") {
     query = query.eq("category", filters.category as KnowledgeCategory);
   }
@@ -362,11 +377,11 @@ export async function listPerformanceLog(companyId: string, limit = 10) {
   })[];
 }
 
-export function currentMonthBounds() {
+export function currentMonthBounds(locale: "en" | "vi" = "vi") {
   const now = new Date();
   const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
   const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0));
-  const label = new Intl.DateTimeFormat("vi-VN", {
+  const label = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "vi-VN", {
     month: "long",
     year: "numeric",
   }).format(now);
@@ -433,15 +448,25 @@ export type SafePlatformAccount = Omit<
   "access_token_enc" | "refresh_token_enc"
 >;
 
-export async function listPlatformAccounts(): Promise<SafePlatformAccount[]> {
+export async function listPlatformAccounts(
+  companyId?: string | null
+): Promise<SafePlatformAccount[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("platform_accounts")
     .select(
       "id, owner_id, company_id, platform, account_id, account_name, token_expires_at, refresh_expires_at, scopes, status, last_synced_at, metadata, created_at, updated_at"
     )
     .order("created_at", { ascending: false });
 
+  if (companyId !== undefined) {
+    query =
+      companyId === null
+        ? query.is("company_id", null)
+        : query.eq("company_id", companyId);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as SafePlatformAccount[];
 }

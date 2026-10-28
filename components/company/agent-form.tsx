@@ -8,6 +8,7 @@ import { Alert, Field, Input, Select, Textarea } from "@/components/ui/kit";
 import { AGENT_ROLES } from "@/lib/constants";
 import { OPENCODE_FREE_MODELS } from "@/lib/ai/free-models";
 import type { AiAgent } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
 const PROVIDER_OPTIONS = [
   { value: "", label: "Tự động (router chọn)" },
@@ -22,57 +23,61 @@ const PROVIDER_OPTIONS = [
 export function AgentForm({
   companyId,
   agents,
+  locale,
 }: {
   companyId: string;
   agents: Pick<AiAgent, "id" | "name" | "role">[];
+  locale: Locale;
 }) {
   const [state, action] = useActionState(addAgent, initialFormState);
 
   return (
     <form action={action} className="space-y-4">
-      {state.status === "error" && <Alert tone="error">{state.message}</Alert>}
+      {state.status === "error" && (
+        <Alert tone="error">{tr(locale, state.message)}</Alert>
+      )}
       {state.status === "success" && (
-        <Alert tone="success">{state.message}</Alert>
+        <Alert tone="success">{tr(locale, state.message)}</Alert>
       )}
 
       <input type="hidden" name="company_id" value={companyId} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tên AI" htmlFor="agent-name">
+        <Field label={tr(locale, "Tên AI")} htmlFor="agent-name">
           <Input
             id="agent-name"
             name="name"
-            placeholder="VD: Writer SEO"
+            placeholder={tr(locale, "VD: Writer SEO")}
             maxLength={120}
             required
           />
         </Field>
 
-        <Field label="Vai trò" htmlFor="agent-role">
+        <Field label={tr(locale, "Vai trò")} htmlFor="agent-role">
           <Select id="agent-role" name="role" defaultValue="specialist">
             <option value="ceo">CEO</option>
-            <option value="manager">Quản lý</option>
-            <option value="specialist">Chuyên viên</option>
-            <option value="worker">Thực thi</option>
+            <option value="manager">{tr(locale, "Quản lý")}</option>
+            <option value="specialist">{tr(locale, "Chuyên viên")}</option>
+            <option value="worker">{tr(locale, "Thực thi")}</option>
           </Select>
         </Field>
 
-        <Field label="Cấp trên" htmlFor="agent-parent">
+        <Field label={tr(locale, "Cấp trên")} htmlFor="agent-parent">
           <Select id="agent-parent" name="parent_id" defaultValue="">
-            <option value="">Không có (cấp cao nhất)</option>
+            <option value="">{tr(locale, "Không có (cấp cao nhất)")}</option>
             {agents.map((agent) => (
               <option key={agent.id} value={agent.id}>
-                {agent.name} · {AGENT_ROLES[agent.role].label}
+                {agent.name} · {tr(locale, AGENT_ROLES[agent.role].label)}
               </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Chức danh" htmlFor="agent-title">
+        <Field label={tr(locale, "Chức danh")} htmlFor="agent-title">
           <Input
             id="agent-title"
             name="title"
-            placeholder="VD: Chuyên viên SEO video"
+            placeholder={tr(locale, "VD: Chuyên viên SEO video")}
             maxLength={160}
           />
         </Field>
@@ -81,7 +86,7 @@ export function AgentForm({
           <Select id="agent-provider" name="provider" defaultValue="">
             {PROVIDER_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {tr(locale, option.label)}
               </option>
             ))}
           </Select>
@@ -90,7 +95,7 @@ export function AgentForm({
         <Field
           label="Model free (OpenCode Zen)"
           htmlFor="agent-model"
-          hint="Để trống = model free mặc định. Chỉ chọn model trong danh sách free."
+          hint={tr(locale, "Để trống = model free mặc định. Chỉ chọn model trong danh sách free.")}
         >
           <Input
             id="agent-model"
@@ -108,9 +113,9 @@ export function AgentForm({
         </Field>
 
         <Field
-          label="Trần token mỗi lần chạy"
+          label={tr(locale, "Trần token mỗi lần chạy")}
           htmlFor="agent-tokens"
-          hint="Giới hạn output để tránh đốt token."
+          hint={tr(locale, "Giới hạn output để tránh đốt token.")}
         >
           <Input
             id="agent-tokens"
@@ -124,9 +129,9 @@ export function AgentForm({
         </Field>
 
         <Field
-          label="Hạn mức token mỗi ngày"
+          label={tr(locale, "Hạn mức token mỗi ngày")}
           htmlFor="agent-daily-tokens"
-          hint="CEO chia pool này cho các task; hết là dừng."
+          hint={tr(locale, "CEO chia pool này cho các task; hết là dừng.")}
         >
           <Input
             id="agent-daily-tokens"
@@ -145,12 +150,14 @@ export function AgentForm({
           id="agent-prompt"
           name="system_prompt"
           rows={4}
-          placeholder="Mô tả nhiệm vụ, cách làm việc và định dạng đầu ra của AI này…"
+          placeholder={tr(locale, "Mô tả nhiệm vụ, cách làm việc và định dạng đầu ra của AI này…")}
           maxLength={8000}
         />
       </Field>
 
-      <SubmitButton pendingText="Đang thêm…">Thêm AI</SubmitButton>
+      <SubmitButton pendingText={tr(locale, "Đang thêm…")}>
+        {tr(locale, "Thêm AI")}
+      </SubmitButton>
     </form>
   );
 }

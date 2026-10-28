@@ -16,24 +16,31 @@ import {
 } from "@/components/ui/kit";
 import { KNOWLEDGE_CATEGORIES, KNOWLEDGE_DOMAINS } from "@/lib/constants";
 import type { KnowledgeDoc } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
 export function KnowledgeForm({
   mode,
   doc,
   companies,
+  defaultCompanyId,
+  locale,
 }: {
   mode: "create" | "edit";
   doc?: KnowledgeDoc;
   companies: { id: string; name: string }[];
+  defaultCompanyId?: string;
+  locale: Locale;
 }) {
   const action = mode === "create" ? createKnowledgeDoc : updateKnowledgeDoc;
   const [state, formAction] = useActionState(action, initialFormState);
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.status === "error" && <Alert tone="error">{state.message}</Alert>}
+      {state.status === "error" && (
+        <Alert tone="error">{tr(locale, state.message)}</Alert>
+      )}
       {state.status === "success" && (
-        <Alert tone="success">{state.message}</Alert>
+        <Alert tone="success">{tr(locale, state.message)}</Alert>
       )}
 
       {mode === "edit" && doc && (
@@ -41,18 +48,18 @@ export function KnowledgeForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tiêu đề" htmlFor="doc-title">
+        <Field label={tr(locale, "Tiêu đề")} htmlFor="doc-title">
           <Input
             id="doc-title"
             name="title"
             defaultValue={doc?.title}
-            placeholder="VD: Công thức content Facebook 2026"
+            placeholder={tr(locale, "VD: Công thức content Facebook 2026")}
             maxLength={200}
             required
           />
         </Field>
 
-        <Field label="Loại tài liệu" htmlFor="doc-category">
+        <Field label={tr(locale, "Loại tài liệu")} htmlFor="doc-category">
           <Select
             id="doc-category"
             name="category"
@@ -60,16 +67,16 @@ export function KnowledgeForm({
           >
             {Object.entries(KNOWLEDGE_CATEGORIES).map(([value, meta]) => (
               <option key={value} value={value}>
-                {meta.label}
+                {tr(locale, meta.label)}
               </option>
             ))}
           </Select>
         </Field>
 
         <Field
-          label="Mảng"
+          label={tr(locale, "Mảng")}
           htmlFor="doc-domain"
-          hint="VD: Content Facebook, SEO & Website, Sách & Xuất bản…"
+          hint={tr(locale, "VD: Content Facebook, SEO & Website, Sách & Xuất bản…")}
         >
           <Input
             id="doc-domain"
@@ -87,16 +94,16 @@ export function KnowledgeForm({
         </Field>
 
         <Field
-          label="Phạm vi"
+          label={tr(locale, "Phạm vi")}
           htmlFor="doc-company"
-          hint="Để trống = mọi công ty AI đều dùng."
+          hint={tr(locale, "Để trống = mọi công ty AI đều dùng.")}
         >
           <Select
             id="doc-company"
             name="company_id"
-            defaultValue={doc?.company_id ?? ""}
+            defaultValue={doc?.company_id ?? defaultCompanyId ?? ""}
           >
-            <option value="">Dùng chung (toàn hệ thống)</option>
+            <option value="">{tr(locale, "Dùng chung (toàn hệ thống)")}</option>
             {companies.map((company) => (
               <option key={company.id} value={company.id}>
                 {company.name}
@@ -108,7 +115,7 @@ export function KnowledgeForm({
         <Field
           label="Tags"
           htmlFor="doc-tags"
-          hint="Phân cách bằng dấu phẩy."
+          hint={tr(locale, "Phân cách bằng dấu phẩy.")}
         >
           <Input
             id="doc-tags"
@@ -121,16 +128,16 @@ export function KnowledgeForm({
       </div>
 
       <Field
-        label="Nội dung / Prompt"
+        label={tr(locale, "Nội dung / Prompt")}
         htmlFor="doc-content"
-        hint="Đây là phần AI sẽ đọc và áp dụng khi chạy việc."
+        hint={tr(locale, "Đây là phần AI sẽ đọc và áp dụng khi chạy việc.")}
       >
         <Textarea
           id="doc-content"
           name="content"
           rows={10}
           defaultValue={doc?.content}
-          placeholder="Dán prompt, playbook, quy trình hoặc kiến thức cần AI ghi nhớ…"
+          placeholder={tr(locale, "Dán prompt, playbook, quy trình hoặc kiến thức cần AI ghi nhớ…")}
           maxLength={50000}
           required
         />
@@ -144,7 +151,7 @@ export function KnowledgeForm({
             defaultChecked={doc ? doc.active : true}
             className="size-4 accent-[#cd8615]"
           />
-          AI được dùng tài liệu này
+          {tr(locale, "AI được dùng tài liệu này")}
         </label>
         <label className="flex items-center gap-2 text-sm text-fog-300">
           <input
@@ -153,12 +160,12 @@ export function KnowledgeForm({
             defaultChecked={doc?.pinned ?? false}
             className="size-4 accent-[#cd8615]"
           />
-          Ghim (ưu tiên khi có xung đột)
+          {tr(locale, "Ghim (ưu tiên khi có xung đột)")}
         </label>
       </div>
 
-      <SubmitButton pendingText={mode === "create" ? "Đang lưu…" : "Đang lưu…"}>
-        {mode === "create" ? "Thêm tài liệu" : "Lưu thay đổi"}
+      <SubmitButton pendingText={tr(locale, "Đang lưu…")}>
+        {mode === "create" ? tr(locale, "Thêm tài liệu") : tr(locale, "Lưu thay đổi")}
       </SubmitButton>
     </form>
   );

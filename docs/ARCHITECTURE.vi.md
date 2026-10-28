@@ -85,6 +85,37 @@ Budget của task đang mở được giữ chỗ để lập kế hoạch liên
 Cost ledger ghi token thật và chi phí. Provider/model trả phí bị từ chối khi
 `AI_FREE_ONLY=1`.
 
+## Vai trò
+
+| Vai trò | Phạm vi |
+| --- | --- |
+| `super_admin` | Chủ platform: quản lý admin, thấy mọi workspace, chỉ vai trò này vào `/admin` và đổi quyền |
+| `admin` | Chủ workspace: tạo/quản lý công ty AI, agent, kênh, tri thức, ngân sách của mình |
+| `user` | Thành viên/viewer; chưa có dữ liệu workspace cho đến khi có membership |
+
+`owner_id` là ranh giới tenant. `is_admin()` trong SQL nghĩa là “super_admin
+platform” cho global RLS; `is_workspace_admin()` cho admin/super_admin tạo
+company/agent/channel. Trigger chặn user/admin tự đổi role.
+
+## Ranh giới công ty
+
+Platform là portfolio nhiều công ty AI. Mỗi công ty sở hữu agent, task, budget và
+tài nguyên vận hành; tri thức dùng chung và cấu hình provider là dịch vụ platform.
+
+| Tài nguyên | Sở hữu | Ghi chú |
+| --- | --- | --- |
+| Công ty, agent, task, budget | `company_id` | Domain chính của công ty |
+| Tri thức | `company_id` nullable | `NULL` = dùng chung |
+| Kênh | `company_id` nullable | Kênh cũ bắt đầu chưa gán |
+| Platform account | `company_id` | Kết nối OAuth |
+| Doanh thu / chi phí | `company_id` | Tài chính công ty |
+| Content / media job | qua `channel_id` | Kênh thuộc công ty |
+
+Sidebar global gồm portfolio, tri thức dùng chung, AI Studio và cài đặt. Subnav
+công ty gồm Tổng quan, Agents, Nhiệm vụ, Tri thức, Kênh, Kết nối, Doanh thu và
+Cấu hình. Các module hiện dùng company context (`?company=<id>`); nested route
+`/company/[id]/...` là bước dọn URL sau này, không thay đổi ranh giới dữ liệu.
+
 ## Chế độ workspace
 
 - **Multi-Agent 2D** (mặc định): cây tổ chức, status rail, inspector, dependencies,
@@ -113,4 +144,6 @@ riêng, giữ service-role key trên server/worker và dừng agent khi không c
 - Connector dữ liệu sản phẩm Kalodata/TikTok Shop.
 - Render video bằng MoneyPrinterTurbo.
 - UI song ngữ (tài liệu English-first; UI hiện tại vẫn tiếng Việt).
+- Template công ty Phim, Kế toán và Phần mềm/Code.
+- Nested URL `/company/[id]/...` cho module (hiện dùng company context).
 - Test end-to-end tự động cho task lifecycle.

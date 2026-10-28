@@ -25,6 +25,9 @@ approval gates, a 2D multi-agent workspace, a 3D office view and a media job que
 - **AI company hierarchy:** CEO → managers → specialists, persisted in
   `companies` / `ai_agents`. Tasks are assigned to agents, require approval and
   settle rewards, score and tier after human review.
+- **Company-scoped modules:** Knowledge, Channels, Connections and Revenue are
+  opened from each company's subnav and filtered by `company_id`; the global
+  sidebar only hosts the portfolio, shared knowledge, AI Studio and settings.
 - **Free-only AI routing:** `AI_FREE_ONLY=1` blocks paid models/providers at
   runtime. The fallback order is OpenCode Zen → Google Gemini → Groq → OpenRouter.
 - **Token budgets:** company, CEO, manager, specialist, worker and per-task
@@ -51,6 +54,14 @@ Interactive diagrams (dark by default):
 - [Current task workflow — English](docs/architecture/current-task-workflow.en-dark.html)
 - [Current AI company runtime — Vietnamese](docs/architecture/current-ai-company.vi.html)
 - [Current task workflow — Vietnamese](docs/architecture/current-task-workflow.vi.html)
+
+### Diagram snapshots
+
+Click a snapshot to open the interactive diagram.
+
+[![Current AI company runtime](docs/architecture/current-ai-company.en.png)](docs/architecture/current-ai-company.en-dark.html)
+
+[![Current task workflow](docs/architecture/current-task-workflow.en.png)](docs/architecture/current-task-workflow.en-dark.html)
 
 Written overview:
 
@@ -121,11 +132,11 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000), register the first account,
-then run the following in Supabase SQL Editor to make it an admin:
+then run the following in Supabase SQL Editor to make it the platform owner:
 
 ```sql
 update public.profiles
-set role = 'admin'
+set role = 'super_admin'
 where email = 'you@example.com';
 ```
 
@@ -181,6 +192,19 @@ Open task budgets are reserved so consecutive planner runs do not over-allocate.
 Budget exhaustion, quota 429s and provider failures stop the task and send it to
 review instead of retrying indefinitely.
 
+## Roles and workspaces
+
+- **super_admin** — platform owner. Manages admin accounts, sees every workspace
+  and is the only role that can access `/admin` or change roles.
+- **admin** — workspace owner. Creates and manages its own AI companies, agents,
+  channels, knowledge and budgets; cannot see another owner's data.
+- **user** — member/viewer. No workspace data until a workspace membership model
+  is added.
+
+The tenant boundary is `owner_id`. Company modules are further scoped by
+`company_id`. A demo admin should get its own demo company, never global admin
+access to real data.
+
 ## AI company and task lifecycle
 
 1. The CEO agent plans tasks and allocates a `token_budget` to each task.
@@ -198,6 +222,8 @@ Current workflow diagram:
 
 Open `/company/[id]`:
 
+- A company subnav exposes Overview, Agents, Tasks, Knowledge, Channels,
+  Connections, Revenue and Settings.
 - **Multi-Agent 2D** is the default: organization tree, status rail, inspector,
   dependencies, quick actions and agent tabs.
 - **Văn phòng 3D** switches to the existing 3D office scene.
@@ -205,7 +231,8 @@ Open `/company/[id]`:
   itself; the “Tự động” toggle still controls autopilot.
 
 The 2D workspace and the bottom task/report panels use a dark island theme. The
-3D view keeps the original light shell and 3D office.
+3D view keeps the original light shell and 3D office. Legacy channels start
+unassigned; open the company Channels page and assign them to the owning company.
 
 ## Autopilot
 
@@ -346,6 +373,7 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Wire MoneyPrinterTurbo as a separate video render worker.
 - Add bilingual UI copy (the documentation is already English-first; UI copy is
   currently Vietnamese).
+- Add company templates for Film, Accounting and Software/Code teams.
 - Add automated tests for the task lifecycle and budget guard.
 - Add a LICENSE file before publishing as a public open-source project.
 

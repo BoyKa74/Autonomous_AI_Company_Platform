@@ -8,16 +8,20 @@ import { EmptyState, Eyebrow, Tag } from "@/components/ui/kit";
 import { TASK_STATUSES } from "@/lib/constants";
 import { formatDateTime } from "@/lib/utils";
 import type { AgentTask } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
 export function TaskList({
   tasks,
   agentNames,
   channels,
+  locale,
 }: {
   tasks: AgentTask[];
   agentNames: Record<string, string>;
   channels: { id: string; name: string }[];
+  locale: Locale;
 }) {
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
   const [openId, setOpenId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const channelName = new Map(
@@ -27,8 +31,11 @@ export function TaskList({
   if (tasks.length === 0) {
     return (
       <EmptyState
-        title="Chưa có nhiệm vụ nào"
-        description="Giao việc cho một AI ở khung bên trái để bắt đầu."
+        title={tr(locale, "Chưa có nhiệm vụ nào")}
+        description={tr(
+          locale,
+          "Giao việc cho một AI ở khung bên trái để bắt đầu."
+        )}
       />
     );
   }
@@ -51,34 +58,40 @@ export function TaskList({
                     className="font-mono text-[10.5px] uppercase tracking-wider"
                     style={{ color: meta.color }}
                   >
-                    {meta.label}
+                    {tr(locale, meta.label)}
                   </span>
                   <Eyebrow>
                     {task.agent_id
                       ? agentNames[task.agent_id] ?? "Agent"
-                      : "Chưa gán"}
+                      : tr(locale, "Chưa gán")}
                   </Eyebrow>
                   {task.channel_id && (
-                    <Tag>{channelName.get(task.channel_id) ?? "Kênh"}</Tag>
+                    <Tag>
+                      {channelName.get(task.channel_id) ?? tr(locale, "Kênh")}
+                    </Tag>
                   )}
                   {task.status === "approved" && (
                     <Tag className={task.published_at ? "text-ok-400" : "text-warn-400"}>
-                      {task.published_at ? "đã đăng" : "sẵn sàng đăng"}
+                      {task.published_at
+                        ? tr(locale, "đã đăng")
+                        : tr(locale, "sẵn sàng đăng")}
                     </Tag>
                   )}
                   <Eyebrow>
-                    dự toán ${task.estimate_usd.toFixed(4)} · chi phí $
+                    {tr(locale, "dự toán")} $
+                    {task.estimate_usd.toFixed(4)} · {tr(locale, "chi phí")} $
                     {task.actual_usd.toFixed(4)}
                   </Eyebrow>
                   {Number(task.reward_usd) > 0 && (
                     <span className="font-mono text-[10.5px] uppercase tracking-wider text-ok-400">
-                      thưởng ${Number(task.reward_usd).toFixed(2)}
+                      {tr(locale, "thưởng")} $
+                      {Number(task.reward_usd).toFixed(2)}
                     </span>
                   )}
                   {Array.isArray(task.workflow_state) &&
                     task.workflow_state.length > 0 && (
                       <span className="font-mono text-[10.5px] uppercase tracking-wider text-fog-500">
-                        bước{" "}
+                        {tr(locale, "bước")}{" "}
                         {
                           (
                             task.workflow_state as {
@@ -94,10 +107,12 @@ export function TaskList({
                   {task.title}
                 </p>
                 <p className="mt-0.5 font-mono text-[10.5px] text-fog-600">
-                  {formatDateTime(task.created_at)}
+                  {formatDateTime(task.created_at, locale)}
                   {` · ${task.actual_tokens.toLocaleString(
-                    "vi-VN"
-                  )}/${task.token_budget.toLocaleString("vi-VN")} token`}
+                    numberLocale
+                  )}/${task.token_budget.toLocaleString(
+                    numberLocale
+                  )} ${tr(locale, "token")}`}
                 </p>
               </button>
 
@@ -107,8 +122,11 @@ export function TaskList({
                 ) && (
                   <form action={runTaskStep}>
                     <input type="hidden" name="id" value={task.id} />
-                    <SubmitButton size="sm" pendingText="Đang chạy…">
-                      Chạy bước
+                    <SubmitButton
+                      size="sm"
+                      pendingText={tr(locale, "Đang chạy…")}
+                    >
+                      {tr(locale, "Chạy bước")}
                     </SubmitButton>
                   </form>
                 )}
@@ -123,14 +141,16 @@ export function TaskList({
                         }}
                         className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
                       >
-                        {copiedId === task.id ? "Đã copy" : "Copy nội dung"}
+                        {copiedId === task.id
+                          ? tr(locale, "Đã copy")
+                          : tr(locale, "Copy nội dung")}
                       </button>
                     )}
                     {!task.published_at && (
                       <form action={markTaskPublished}>
                         <input type="hidden" name="id" value={task.id} />
                         <SubmitButton size="sm" variant="secondary" pendingText="…">
-                          Đã đăng
+                          {tr(locale, "Đã đăng")}
                         </SubmitButton>
                       </form>
                     )}
@@ -146,7 +166,7 @@ export function TaskList({
                         value={task.company_id}
                       />
                       <SubmitButton size="sm" pendingText="…">
-                        Duyệt
+                        {tr(locale, "Duyệt")}
                       </SubmitButton>
                     </form>
                     <form action={rejectTask}>
@@ -161,7 +181,7 @@ export function TaskList({
                         variant="danger"
                         pendingText="…"
                       >
-                        Từ chối
+                        {tr(locale, "Từ chối")}
                       </SubmitButton>
                     </form>
                   </>
@@ -183,15 +203,16 @@ export function TaskList({
               <div className="mt-3 rounded-md border border-ink-700 bg-ink-900 p-3">
                 {task.brief && (
                   <>
-                    <Eyebrow className="mb-1">Yêu cầu</Eyebrow>
+                    <Eyebrow className="mb-1">{tr(locale, "Yêu cầu")}</Eyebrow>
                     <p className="mb-3 whitespace-pre-wrap text-xs text-fog-500">
                       {task.brief}
                     </p>
                   </>
                 )}
-                <Eyebrow className="mb-1">Kết quả</Eyebrow>
+                <Eyebrow className="mb-1">{tr(locale, "Kết quả")}</Eyebrow>
                 <pre className="max-h-96 overflow-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-fog-100">
-                  {task.result || "Chưa có kết quả — bấm Chạy bước để tạo."}
+                  {task.result ||
+                    tr(locale, "Chưa có kết quả — bấm Chạy bước để tạo.")}
                 </pre>
                 {typeof task.review === "object" &&
                   task.review !== null &&
@@ -199,7 +220,7 @@ export function TaskList({
                   task.review.notes && (
                     <div className="mt-3 rounded-md border border-ink-700 bg-white p-3">
                       <Eyebrow className="mb-1">
-                        Quản lý duyệt
+                        {tr(locale, "Quản lý duyệt")}
                         {task.review.by ? ` · ${String(task.review.by)}` : ""}
                       </Eyebrow>
                       <p className="whitespace-pre-wrap text-sm text-fog-300">

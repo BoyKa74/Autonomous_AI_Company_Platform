@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getApiSession, jsonError } from "@/lib/api";
 
 const bodySchema = z.object({
-  role: z.enum(["user", "admin"]),
+  role: z.enum(["user", "admin", "super_admin"]),
 });
 
 export async function PATCH(
@@ -19,8 +19,8 @@ export async function PATCH(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.role !== "admin") {
-    return jsonError(403, "Chỉ admin được truy cập");
+  if (profile?.role !== "super_admin") {
+    return jsonError(403, "Chỉ super_admin được truy cập");
   }
 
   const { id } = await ctx.params;
@@ -33,10 +33,10 @@ export async function PATCH(
   }
 
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return jsonError(422, "role phải là user hoặc admin");
+  if (!parsed.success) return jsonError(422, "role phải là user, admin hoặc super_admin");
 
-  if (id === user.id && parsed.data.role !== "admin") {
-    return jsonError(400, "Không thể tự thu quyền admin của mình");
+  if (id === user.id && parsed.data.role !== "super_admin") {
+    return jsonError(400, "Không thể tự thu quyền super_admin của mình");
   }
 
   const { data, error } = await supabase

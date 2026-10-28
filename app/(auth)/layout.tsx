@@ -29,7 +29,7 @@ export default function AuthLayout({
         <Brand />
         <div className="mt-6 w-full">{children}</div>
         <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.22em] text-fog-600">
-          YouTube · TikTok · Facebook · Sách · Sàn TMĐT
+          YouTube · TikTok · Facebook · Books · Marketplaces
         </p>
       </div>
     </div>

@@ -3,8 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input, Select, buttonStyles } from "@/components/ui/kit";
 import { PLATFORMS, PLATFORM_ORDER, REGIONS, STATUSES, STATUS_ORDER } from "@/lib/constants";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
-export function ChannelFilters() {
+export function ChannelFilters({ locale }: { locale: Locale }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,14 +27,14 @@ export function ChannelFilters() {
     <div className="flex flex-wrap items-end gap-3">
       <div className="min-w-44 flex-1">
         <Select
-          aria-label="Lọc theo nền tảng"
+          aria-label={tr(locale, "Lọc theo nền tảng")}
           value={searchParams.get("platform") ?? "all"}
           onChange={(event) => apply("platform", event.target.value)}
         >
-          <option value="all">Tất cả nền tảng</option>
+          <option value="all">{tr(locale, "Tất cả nền tảng")}</option>
           {PLATFORM_ORDER.map((platform) => (
             <option key={platform} value={platform}>
-              {PLATFORMS[platform].label}
+              {tr(locale, PLATFORMS[platform].label)}
             </option>
           ))}
         </Select>
@@ -41,14 +42,14 @@ export function ChannelFilters() {
 
       <div className="min-w-36">
         <Select
-          aria-label="Lọc theo trạng thái"
+          aria-label={tr(locale, "Lọc theo trạng thái")}
           value={searchParams.get("status") ?? "all"}
           onChange={(event) => apply("status", event.target.value)}
         >
-          <option value="all">Mọi trạng thái</option>
+          <option value="all">{tr(locale, "Mọi trạng thái")}</option>
           {STATUS_ORDER.map((status) => (
             <option key={status} value={status}>
-              {STATUSES[status].label}
+              {tr(locale, STATUSES[status].label)}
             </option>
           ))}
         </Select>
@@ -56,11 +57,11 @@ export function ChannelFilters() {
 
       <div className="min-w-32">
         <Select
-          aria-label="Lọc theo khu vực"
+          aria-label={tr(locale, "Lọc theo khu vực")}
           value={searchParams.get("region") ?? "all"}
           onChange={(event) => apply("region", event.target.value)}
         >
-          <option value="all">Mọi khu vực</option>
+          <option value="all">{tr(locale, "Mọi khu vực")}</option>
           {REGIONS.map((region) => (
             <option key={region} value={region}>
               {region}
@@ -72,8 +73,8 @@ export function ChannelFilters() {
       <div className="min-w-48 flex-1">
         <Input
           key={searchParams.get("q") ?? ""}
-          aria-label="Tìm kênh"
-          placeholder="Tìm theo tên hoặc handle…"
+          aria-label={tr(locale, "Tìm kênh")}
+          placeholder={tr(locale, "Tìm theo tên hoặc handle…")}
           defaultValue={searchParams.get("q") ?? ""}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -86,10 +87,13 @@ export function ChannelFilters() {
       {hasFilters && (
         <button
           type="button"
-          onClick={() => router.push("/channels")}
+          onClick={() => {
+            const company = searchParams.get("company");
+            router.push(company ? `/channels?company=${company}` : "/channels");
+          }}
           className={buttonStyles("ghost", "md")}
         >
-          Xoá lọc
+          {tr(locale, "Xoá lọc")}
         </button>
       )}
     </div>

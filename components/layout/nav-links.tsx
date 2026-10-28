@@ -1,43 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { t, type Locale } from "@/lib/i18n/messages";
 import {
   BookIcon,
-  BroadcastIcon,
   BuildingIcon,
   GaugeIcon,
-  PlugIcon,
   ShieldIcon,
   SlidersIcon,
-  WalletIcon,
-  SparkIcon,
   UsersIcon,
   type IconProps,
 } from "@/components/icons";
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: (props: IconProps) => React.ReactElement;
   adminOnly?: boolean;
 };
 
 const ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Bảng điều khiển", icon: GaugeIcon },
-  { href: "/channels", label: "Kênh", icon: BroadcastIcon },
-  { href: "/company", label: "Công ty AI", icon: BuildingIcon },
-  { href: "/knowledge", label: "Tri thức", icon: BookIcon },
-  { href: "/revenue", label: "Doanh thu", icon: WalletIcon },
-  { href: "/connections", label: "Kết nối kênh", icon: PlugIcon },
-  { href: "/ai", label: "AI Studio", icon: SparkIcon },
-  { href: "/settings", label: "Cài đặt", icon: SlidersIcon },
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: GaugeIcon },
+  { href: "/company", labelKey: "nav.company", icon: BuildingIcon },
+  { href: "/knowledge", labelKey: "nav.sharedKnowledge", icon: BookIcon },
+  { href: "/settings", labelKey: "nav.settings", icon: SlidersIcon },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Tổng quan hệ thống", icon: ShieldIcon },
-  { href: "/admin/users", label: "Người dùng", icon: UsersIcon },
+  { href: "/admin", labelKey: "nav.adminOverview", icon: ShieldIcon },
+  { href: "/admin/users", labelKey: "nav.adminUsers", icon: UsersIcon },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -47,12 +40,15 @@ function isActive(pathname: string, href: string) {
 
 export function NavLinks({
   isAdmin,
+  locale,
   orientation = "vertical",
 }: {
   isAdmin: boolean;
+  locale: Locale;
   orientation?: "vertical" | "horizontal";
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const items = isAdmin ? [...ITEMS, ...ADMIN_ITEMS] : ITEMS;
 
   return (
@@ -65,7 +61,9 @@ export function NavLinks({
       )}
     >
       {items.map((item) => {
-        const active = isActive(pathname, item.href);
+        const active =
+          isActive(pathname, item.href) &&
+          !(item.href === "/knowledge" && searchParams.get("company"));
         const Icon = item.icon;
         return (
           <Link
@@ -87,7 +85,7 @@ export function NavLinks({
               )}
             />
             <span className={cn(orientation === "horizontal" && "text-xs")}>
-              {item.label}
+              {t(locale, item.labelKey)}
             </span>
           </Link>
         );

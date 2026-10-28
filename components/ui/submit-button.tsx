@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/kit";
 
 export function SubmitButton({
   children,
-  pendingText = "Đang xử lý…",
+  pendingText = "Processing…",
   variant = "primary",
   size = "md",
   className,

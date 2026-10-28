@@ -25,6 +25,9 @@ của con người, workspace đa tác nhân 2D, văn phòng 3D và hàng đợi
 - **Công ty AI phân cấp:** CEO → quản lý → chuyên viên, lưu trong `companies` /
   `ai_agents`. Task giao cho agent, mặc định chờ duyệt; sau khi con người duyệt mới
   settle thưởng, điểm và tầng.
+- **Module theo công ty:** Tri thức, Kênh, Kết nối và Doanh thu được mở từ subnav
+  của từng công ty và lọc theo `company_id`; sidebar global chỉ còn portfolio,
+  tri thức dùng chung, AI Studio và cài đặt.
 - **AI router free-only:** `AI_FREE_ONLY=1` chặn model/provider trả phí ở runtime.
   Fallback: OpenCode Zen → Google Gemini → Groq → OpenRouter.
 - **Ngân sách token:** theo công ty, CEO, manager, specialist, worker và từng task;
@@ -50,6 +53,14 @@ Sơ đồ tương tác (dark mặc định):
 - [Workflow task hiện tại — English](docs/architecture/current-task-workflow.en-dark.html)
 - [Kiến trúc runtime hiện tại — Tiếng Việt](docs/architecture/current-ai-company.vi.html)
 - [Workflow task hiện tại — Tiếng Việt](docs/architecture/current-task-workflow.vi.html)
+
+### Ảnh sơ đồ
+
+Bấm vào ảnh để mở sơ đồ tương tác.
+
+[![Kiến trúc runtime hiện tại](docs/architecture/current-ai-company.vi.png)](docs/architecture/current-ai-company.vi.html)
+
+[![Workflow task hiện tại](docs/architecture/current-task-workflow.vi.png)](docs/architecture/current-task-workflow.vi.html)
 
 Tài liệu dạng chữ:
 
@@ -118,11 +129,11 @@ npm run dev
 ```
 
 Mở [http://localhost:3000](http://localhost:3000), đăng ký tài khoản đầu tiên, sau
-đó chạy trong Supabase SQL Editor để cấp admin:
+đó chạy trong Supabase SQL Editor để cấp quyền chủ platform:
 
 ```sql
 update public.profiles
-set role = 'admin'
+set role = 'super_admin'
 where email = 'you@example.com';
 ```
 
@@ -177,6 +188,19 @@ Budget của task đang mở được giữ chỗ để các lần lập kế ho
 trùng. Hết budget, 429/quota hoặc provider lỗi sẽ dừng task và chuyển review thay
 vì retry vô hạn.
 
+## Vai trò và workspace
+
+- **super_admin** — chủ platform. Quản lý các admin, thấy mọi workspace và là vai
+  trò duy nhất vào `/admin` hoặc đổi quyền.
+- **admin** — chủ workspace. Tạo/quản lý công ty AI, agent, kênh, tri thức và
+  ngân sách của riêng mình; không thấy dữ liệu của chủ khác.
+- **user** — thành viên/viewer. Chưa có dữ liệu workspace cho đến khi có mô hình
+  membership.
+
+Ranh giới tenant là `owner_id`; module công ty lọc thêm theo `company_id`. Tài
+khoản demo admin phải có công ty demo riêng, không dùng admin toàn hệ thống để
+xem dữ liệu thật.
+
 ## Công ty AI và vòng đời task
 
 1. CEO lập kế hoạch và cấp `token_budget` cho từng task.
@@ -194,6 +218,8 @@ Sơ đồ workflow:
 
 Mở `/company/[id]`:
 
+- Subnav công ty gồm Tổng quan, Agents, Nhiệm vụ, Tri thức, Kênh, Kết nối,
+  Doanh thu và Cấu hình.
 - **Multi-Agent 2D** là mặc định: cây tổ chức, status rail, inspector,
   dependencies, quick actions và agent tabs.
 - **Văn phòng 3D** chuyển sang scene văn phòng 3D hiện có.
@@ -201,7 +227,8 @@ Mở `/company/[id]`:
   công tắc của autopilot.
 
 Workspace 2D và các panel task/report bên dưới dùng dark island. View 3D giữ light
-shell và văn phòng 3D như cũ.
+shell và văn phòng 3D như cũ. Kênh cũ bắt đầu ở trạng thái chưa gán; mở trang Kênh
+của công ty để gán về đúng công ty.
 
 ## Autopilot
 
@@ -335,6 +362,7 @@ node .agents/skills/archify/bin/archify.mjs finalize workflow \
 - Thêm connector research sản phẩm thật (Kalodata/TikTok Shop hoặc public search).
 - Nối MoneyPrinterTurbo thành worker render video riêng.
 - Bổ sung UI song ngữ (tài liệu đã English-first; UI hiện tại vẫn tiếng Việt).
+- Thêm template công ty Phim, Kế toán và Phần mềm/Code.
 - Thêm test tự động cho task lifecycle và budget guard.
 - Thêm file LICENSE trước khi publish public open-source.
 

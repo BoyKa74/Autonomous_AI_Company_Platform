@@ -16,12 +16,12 @@ export function RegisterForm() {
         <Alert tone="success">{state.message}</Alert>
       )}
 
-      <Field label="Tên hiển thị" htmlFor="full_name">
+      <Field label="Display name" htmlFor="full_name">
         <Input
           id="full_name"
           name="full_name"
           autoComplete="name"
-          placeholder="Nguyễn Văn A"
+          placeholder="Jane Doe"
           required
         />
       </Field>
@@ -32,15 +32,15 @@ export function RegisterForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="ban@congty.vn"
+          placeholder="you@company.com"
           required
         />
       </Field>
 
       <Field
-        label="Mật khẩu"
+        label="Password"
         htmlFor="password"
-        hint="Tối thiểu 6 ký tự."
+        hint="At least 6 characters."
       >
         <Input
           id="password"
@@ -53,8 +53,8 @@ export function RegisterForm() {
         />
       </Field>
 
-      <SubmitButton className="w-full" pendingText="Đang tạo tài khoản…">
-        Tạo tài khoản
+      <SubmitButton className="w-full" pendingText="Creating account…">
+        Create account
       </SubmitButton>
     </form>
   );

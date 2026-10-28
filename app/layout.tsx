@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Be_Vietnam_Pro, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { getLocale } from "@/lib/i18n/server";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -22,17 +23,19 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "VIC Affiliate — Phòng điều khiển kênh",
+    default: "VIC Affiliate — Channel control room",
     template: "%s · VIC Affiliate",
   },
   description:
-    "Trung tâm điều phối đa kênh: YouTube, TikTok, Facebook, sách, truyền thông và bán hàng trong nước lẫn quốc tế.",
+    "Multi-channel operations hub for YouTube, TikTok, Facebook, books, media, and domestic and international commerce.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="vi"
+      lang={locale}
       className={`${archivo.variable} ${beVietnam.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>

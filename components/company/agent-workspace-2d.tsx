@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { TaskForm } from "@/components/company/task-form";
+import { AgentSettingsForm } from "@/components/company/agent-settings-form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Eyebrow, Tag } from "@/components/ui/kit";
 import { removeAgent, updateAgentBudget } from "@/app/actions/company";
@@ -11,6 +12,7 @@ import { AGENT_ROLES, TASK_STATUSES } from "@/lib/constants";
 import { tierMeta } from "@/lib/economy";
 import {
   BookIcon,
+  BroadcastIcon,
   BuildingIcon,
   ChevronRightIcon,
   GaugeIcon,
@@ -20,6 +22,7 @@ import {
   UsersIcon,
   WalletIcon,
 } from "@/components/icons";
+import { tr, type Locale } from "@/lib/i18n/messages";
 import type {
   AgentTask,
   AiAgent,
@@ -121,6 +124,7 @@ function AgentCard({
   onSelect,
   onAssign,
   featured = false,
+  locale,
 }: {
   agent: AiAgent;
   selected: boolean;
@@ -133,9 +137,11 @@ function AgentCard({
   onSelect: () => void;
   onAssign: () => void;
   featured?: boolean;
+  locale: Locale;
 }) {
   const role = AGENT_ROLES[agent.role];
   const roleColor = DARK_ROLE_COLORS[agent.role];
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
   const state = agentState(agent, active, failed, review);
   const percent = budget > 0 ? Math.min(100, Math.round((used / budget) * 100)) : 0;
 
@@ -173,10 +179,13 @@ function AgentCard({
             <span className="truncate text-[13px] font-semibold text-fog-100">
               {agent.name}
             </span>
-            <StatusDot color={state.color} label={state.label} />
+            <StatusDot
+              color={state.color}
+              label={tr(locale, state.label)}
+            />
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-fog-600">
-            <span style={{ color: roleColor }}>{role.label}</span>
+            <span style={{ color: roleColor }}>{tr(locale, role.label)}</span>
             {managerName && (
               <>
                 <span>·</span>
@@ -188,14 +197,17 @@ function AgentCard({
       </div>
 
       <p className="mt-2 max-h-[30px] overflow-hidden text-[11px] leading-relaxed text-fog-500">
-        {agent.title || "Chưa có mô tả công việc"}
+        {agent.title || tr(locale, "Chưa có mô tả công việc")}
       </p>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[9px] text-fog-600">
-        <span>{active} việc</span>
+        <span>
+          {active} {tr(locale, "việc")}
+        </span>
         <span>·</span>
         <span>
-          {used.toLocaleString("vi-VN")}/{budget.toLocaleString("vi-VN")} token
+          {used.toLocaleString(numberLocale)}/
+          {budget.toLocaleString(numberLocale)} {tr(locale, "token")}
         </span>
         <span>·</span>
         <span className="truncate">{shortModel(agent.model)}</span>
@@ -217,7 +229,7 @@ function AgentCard({
           }}
           className="font-mono text-[9px] uppercase tracking-[0.14em] text-fog-500 transition-colors hover:text-signal-500"
         >
-          Giao việc
+          {tr(locale, "Giao việc")}
         </button>
         <ChevronRightIcon className="size-3 text-fog-600 transition-colors group-hover:text-signal-500" />
       </div>
@@ -286,6 +298,7 @@ export function AgentWorkspace2D({
   auditing,
   onPlan,
   onAudit,
+  locale,
 }: {
   company: Company;
   agents: AiAgent[];
@@ -304,8 +317,10 @@ export function AgentWorkspace2D({
   auditing: boolean;
   onPlan: () => void;
   onAudit: () => void;
+  locale: Locale;
 }) {
   const [tab, setTab] = useState<PanelTab>("overview");
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
 
   const byId = useMemo(
     () => new Map(agents.map((agent) => [agent.id, agent])),
@@ -423,54 +438,59 @@ export function AgentWorkspace2D({
           <RailLink
             href="#tasks"
             icon={<GaugeIcon className="size-3" />}
-            label="Nhiệm vụ"
+            label={tr(locale, "Nhiệm vụ")}
             count={tasks.length}
           />
           <RailLink
-            href="/knowledge"
+            href={`/knowledge?company=${company.id}`}
             icon={<BookIcon className="size-3" />}
-            label="Kiến thức"
+            label={tr(locale, "Tri thức")}
           />
           <RailLink
-            href="/revenue"
+            href={`/channels?company=${company.id}`}
+            icon={<BroadcastIcon className="size-3" />}
+            label={tr(locale, "Kênh")}
+          />
+          <RailLink
+            href={`/revenue?company=${company.id}`}
             icon={<WalletIcon className="size-3" />}
-            label="Doanh thu"
+            label={tr(locale, "Doanh thu")}
           />
           <RailLink
-            href="/connections"
+            href={`/connections?company=${company.id}`}
             icon={<PlugIcon className="size-3" />}
-            label="Kết nối"
+            label={tr(locale, "Kết nối")}
           />
         </nav>
 
         <div className="mt-4 border-t border-ink-700 pt-3">
           <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.16em] text-fog-600">
-            Trạng thái
+            {tr(locale, "Trạng thái")}
           </p>
           <div className="space-y-1.5">
-            <StatusLine label="Đang chạy" value={taskCounts.running} color="#4cc38a" />
-            <StatusLine label="Chờ chạy" value={taskCounts.queued} color="#e8b64b" />
-            <StatusLine label="Chờ duyệt" value={taskCounts.review} color="#5b9dff" />
-            <StatusLine label="Lỗi" value={taskCounts.failed} color="#ea6a6a" />
-            <StatusLine label="Hoàn tất" value={taskCounts.approved} color="#4cc38a" />
+            <StatusLine label={tr(locale, "Đang chạy")} value={taskCounts.running} color="#4cc38a" />
+            <StatusLine label={tr(locale, "Chờ chạy")} value={taskCounts.queued} color="#e8b64b" />
+            <StatusLine label={tr(locale, "Chờ duyệt")} value={taskCounts.review} color="#5b9dff" />
+            <StatusLine label={tr(locale, "Lỗi")} value={taskCounts.failed} color="#ea6a6a" />
+            <StatusLine label={tr(locale, "Hoàn tất")} value={taskCounts.approved} color="#4cc38a" />
           </div>
         </div>
 
         <div className="mt-auto rounded-lg border border-ink-700 bg-ink-850 p-3">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-fog-600">
-            Dự án hiện tại
+            {tr(locale, "Dự án hiện tại")}
           </p>
           <p className="mt-1 truncate text-xs font-semibold text-fog-100">
             {company.name}
           </p>
           <p className="mt-0.5 font-mono text-[9px] text-fog-600">
-            {agents.length} AI · {tasks.length} việc
+            {agents.length} AI · {tasks.length} {tr(locale, "việc")}
           </p>
           <Link
             href="/company"
             className="mt-2 inline-flex font-mono text-[9px] uppercase tracking-[0.14em] text-signal-500 hover:text-signal-400"
           >
-            Đổi công ty
+            {tr(locale, "Đổi công ty")}
           </Link>
         </div>
       </aside>
@@ -492,7 +512,8 @@ export function AgentWorkspace2D({
                 </span>
               </div>
               <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-fog-600">
-                Multi-Agent · {agents.length} AI · {taskCounts.running} đang chạy
+                Multi-Agent · {agents.length} AI · {taskCounts.running}{" "}
+                {tr(locale, "đang chạy")}
               </p>
             </div>
           </div>
@@ -507,7 +528,7 @@ export function AgentWorkspace2D({
               className="inline-flex items-center gap-1.5 rounded-md bg-signal-500 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#241503] transition-opacity hover:opacity-90"
             >
               <PlusIcon className="size-3" />
-              Tạo AI
+              {tr(locale, "Tạo AI")}
             </button>
             <button
               type="button"
@@ -519,7 +540,9 @@ export function AgentWorkspace2D({
                   : "rounded-md border border-ink-600 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100 disabled:opacity-50"
               }
             >
-              {auto ? "Tự động: BẬT" : "Tự động: TẮT"}
+              {auto
+                ? tr(locale, "Tự động: BẬT")
+                : tr(locale, "Tự động: TẮT")}
             </button>
           </div>
         </header>
@@ -541,14 +564,17 @@ export function AgentWorkspace2D({
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <Eyebrow>Cây tổ chức</Eyebrow>
+              <Eyebrow>{tr(locale, "Cây tổ chức")}</Eyebrow>
               <p className="mt-0.5 text-xs text-fog-500">
-                Chọn một AI để xem chi tiết, cấu hình hoặc giao việc.
+                {tr(
+                  locale,
+                  "Chọn một AI để xem chi tiết, cấu hình hoặc giao việc."
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Tag>{managers.length} quản lý</Tag>
-              <Tag>{specialists.length} chuyên viên</Tag>
+              <Tag>{managers.length} {tr(locale, "quản lý")}</Tag>
+              <Tag>{specialists.length} {tr(locale, "chuyên viên")}</Tag>
             </div>
           </div>
 
@@ -567,11 +593,12 @@ export function AgentWorkspace2D({
                   managerName={null}
                   onSelect={() => onSelect(ceo.id)}
                   onAssign={() => assign(ceo.id)}
+                  locale={locale}
                 />
               </div>
             ) : (
               <p className="py-8 text-sm text-fog-500">
-                Công ty chưa có AI nào. Bấm “Tạo AI” để bắt đầu.
+                {tr(locale, "Công ty chưa có AI nào. Bấm “Tạo AI” để bắt đầu.")}
               </p>
             )}
 
@@ -597,6 +624,7 @@ export function AgentWorkspace2D({
                       }
                       onSelect={() => onSelect(agent.id)}
                       onAssign={() => assign(agent.id)}
+                      locale={locale}
                     />
                   ))}
                 </div>
@@ -625,6 +653,7 @@ export function AgentWorkspace2D({
                       }
                       onSelect={() => onSelect(agent.id)}
                       onAssign={() => assign(agent.id)}
+                      locale={locale}
                     />
                   ))}
                 </div>
@@ -639,11 +668,11 @@ export function AgentWorkspace2D({
             <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider">
               <FlowNode label={ceo ? ceo.name : "CEO"} color="#e8b64b" />
               <FlowArrow />
-              <FlowNode label={`${managers.length} quản lý`} color="#7c53c3" />
+              <FlowNode label={`${managers.length} ${tr(locale, "quản lý")}`} color="#7c53c3" />
               <FlowArrow />
-              <FlowNode label={`${specialists.length} chuyên viên`} color="#0f8f9c" />
+              <FlowNode label={`${specialists.length} ${tr(locale, "chuyên viên")}`} color="#0f8f9c" />
               <FlowArrow />
-              <FlowNode label={`${taskCounts.review} chờ duyệt`} color="#5b9dff" />
+              <FlowNode label={`${taskCounts.review} ${tr(locale, "chờ duyệt")}`} color="#5b9dff" />
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {handoffs.length > 0 ? (
@@ -658,7 +687,7 @@ export function AgentWorkspace2D({
                 ))
               ) : (
                 <span className="text-[10px] text-fog-600">
-                  Không có luồng bàn giao đang chạy.
+                  {tr(locale, "Không có luồng bàn giao đang chạy.")}
                 </span>
               )}
             </div>
@@ -668,17 +697,17 @@ export function AgentWorkspace2D({
             <Eyebrow>Quick Actions</Eyebrow>
             <div className="mt-2 grid gap-1">
               <QuickAction
-                label="CEO lập kế hoạch"
+                label={tr(locale, "CEO lập kế hoạch")}
                 disabled={!aiReady || planning}
                 onClick={onPlan}
               />
               <QuickAction
-                label="CEO kiểm tra"
+                label={tr(locale, "CEO kiểm tra")}
                 disabled={!aiReady || auditing}
                 onClick={onAudit}
               />
               <QuickAction
-                label="Tạo AI mới"
+                label={tr(locale, "Tạo AI mới")}
                 onClick={() =>
                   document
                     .getElementById("agent-form")
@@ -689,7 +718,7 @@ export function AgentWorkspace2D({
                 href="#tasks"
                 className="rounded border border-ink-700 px-2 py-1.5 text-left font-mono text-[9px] uppercase tracking-[0.1em] text-fog-500 transition-colors hover:border-ink-600 hover:text-fog-100"
               >
-                Xem nhiệm vụ
+                {tr(locale, "Xem nhiệm vụ")}
               </a>
             </div>
           </div>
@@ -703,8 +732,7 @@ export function AgentWorkspace2D({
               failedCount(agent.id),
               reviewCount(agent.id)
             );
-            const role = AGENT_ROLES[agent.role];
-  const roleColor = DARK_ROLE_COLORS[agent.role];
+            const roleColor = DARK_ROLE_COLORS[agent.role];
             return (
               <button
                 key={agent.id}
@@ -733,7 +761,7 @@ export function AgentWorkspace2D({
               href="#reports"
               className="ml-auto shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog-600 hover:text-signal-500"
             >
-              Báo cáo CEO
+              {tr(locale, "Báo cáo CEO")}
             </a>
           )}
         </div>
@@ -757,7 +785,8 @@ export function AgentWorkspace2D({
                   {inspected.name}
                 </p>
                 <p className="truncate text-[10px] text-fog-500">
-                  {inspected.title || AGENT_ROLES[inspected.role].label}
+                  {inspected.title ||
+                    tr(locale, AGENT_ROLES[inspected.role].label)}
                 </p>
               </div>
               <StatusPill
@@ -765,15 +794,16 @@ export function AgentWorkspace2D({
                 active={activeCount(inspected.id)}
                 failed={failedCount(inspected.id)}
                 review={reviewCount(inspected.id)}
+                locale={locale}
               />
             </div>
 
             <div className="flex border-b border-ink-700 px-2">
               {(
                 [
-                  ["overview", "Tổng quan"],
-                  ["tasks", "Nhiệm vụ"],
-                  ["config", "Cấu hình"],
+                  ["overview", tr(locale, "Tổng quan")],
+                  ["tasks", tr(locale, "Nhiệm vụ")],
+                  ["config", tr(locale, "Cấu hình")],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -798,18 +828,21 @@ export function AgentWorkspace2D({
                     <Metric label="Model" value={shortModel(inspected.model)} />
                     <Metric label="Provider" value={inspected.provider || "router"} />
                     <Metric
-                      label="Token hôm nay"
-                      value={`${used.toLocaleString("vi-VN")} / ${budget.toLocaleString("vi-VN")}`}
+                      label={tr(locale, "Token hôm nay")}
+                      value={`${used.toLocaleString(numberLocale)} / ${budget.toLocaleString(numberLocale)}`}
                     />
                     <Metric
-                      label="Điểm"
-                      value={`${inspected.score} · T${inspected.tier} ${tierMeta(inspected.tier).name}`}
+                      label={tr(locale, "Điểm")}
+                      value={`${inspected.score} · T${inspected.tier} ${tr(
+                        locale,
+                        tierMeta(inspected.tier).name
+                      )}`}
                     />
                   </div>
 
                   <div>
                     <div className="mb-1 flex items-center justify-between font-mono text-[9px] uppercase tracking-wider text-fog-600">
-                      <span>Ngân sách token</span>
+                      <span>{tr(locale, "Ngân sách token")}</span>
                       <span>{percent}%</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-ink-700">
@@ -829,17 +862,26 @@ export function AgentWorkspace2D({
                   </div>
 
                   <dl className="space-y-1.5 text-[11px]">
-                    <Row label="Quản lý" value={parent?.name ?? "Trực tiếp CEO"} />
-                    <Row label="Đội nhóm" value={`${children.length} AI`} />
                     <Row
-                      label="Việc đạt / lỗi"
+                      label={tr(locale, "Quản lý")}
+                      value={parent?.name ?? tr(locale, "Trực tiếp CEO")}
+                    />
+                    <Row
+                      label={tr(locale, "Đội nhóm")}
+                      value={`${children.length} AI`}
+                    />
+                    <Row
+                      label={tr(locale, "Việc đạt / lỗi")}
                       value={`${inspected.tasks_completed} / ${inspected.tasks_failed}`}
                     />
                     <Row
-                      label="Lương đã tạo"
+                      label={tr(locale, "Lương đã tạo")}
                       value={`$${Number(inspected.earnings_usd).toFixed(2)}`}
                     />
-                    <Row label="Đang xử lý" value={String(activeCount(inspected.id))} />
+                    <Row
+                      label={tr(locale, "Đang xử lý")}
+                      value={String(activeCount(inspected.id))}
+                    />
                   </dl>
 
                   {children.length > 0 && (
@@ -861,7 +903,7 @@ export function AgentWorkspace2D({
                               {child.name}
                             </span>
                             <span className="font-mono text-[9px] text-fog-600">
-                              {activeCount(child.id)} việc
+                              {activeCount(child.id)} {tr(locale, "việc")}
                             </span>
                           </button>
                         ))}
@@ -881,7 +923,9 @@ export function AgentWorkspace2D({
                   )}
 
                   <div className="rounded border border-ink-700 bg-ink-850 p-2">
-                    <Eyebrow className="mb-1">Kênh</Eyebrow>
+                    <Eyebrow className="mb-1">
+                      {tr(locale, "Kênh")}
+                    </Eyebrow>
                     <p className="text-[10px] text-fog-500">
                       {channels.length > 0
                         ? `${channels
@@ -892,7 +936,7 @@ export function AgentWorkspace2D({
                               ? ` · +${channels.length - 3}`
                               : ""
                           }`
-                        : "Chưa có kênh"}
+                        : tr(locale, "Chưa có kênh")}
                     </p>
                   </div>
                 </div>
@@ -902,7 +946,7 @@ export function AgentWorkspace2D({
                 <div className="space-y-2">
                   {inspectedTasks.length === 0 ? (
                     <p className="text-[11px] text-fog-500">
-                      AI này chưa có nhiệm vụ nào.
+                      {tr(locale, "AI này chưa có nhiệm vụ nào.")}
                     </p>
                   ) : (
                     inspectedTasks.slice(0, 10).map((task) => {
@@ -920,12 +964,13 @@ export function AgentWorkspace2D({
                               className="shrink-0 font-mono text-[8px] uppercase tracking-wider"
                               style={{ color: status.color }}
                             >
-                              {status.label}
+                              {tr(locale, status.label)}
                             </span>
                           </div>
                           <p className="mt-1 font-mono text-[9px] text-fog-600">
-                            {task.actual_tokens.toLocaleString("vi-VN")}/
-                            {task.token_budget.toLocaleString("vi-VN")} token
+                            {task.actual_tokens.toLocaleString(numberLocale)}/
+                            {task.token_budget.toLocaleString(numberLocale)}{" "}
+                            {tr(locale, "token")}
                           </p>
                         </div>
                       );
@@ -935,13 +980,20 @@ export function AgentWorkspace2D({
                     href="#tasks"
                     className="block rounded border border-ink-700 px-2 py-1.5 text-center font-mono text-[9px] uppercase tracking-wider text-fog-500 hover:text-fog-100"
                   >
-                    Xem tất cả nhiệm vụ
+                    {tr(locale, "Xem tất cả nhiệm vụ")}
                   </a>
                 </div>
               )}
 
               {tab === "config" && (
                 <div className="space-y-3">
+                  <AgentSettingsForm
+                    key={`${inspected.id}-settings`}
+                    agent={inspected}
+                    companyId={company.id}
+                    locale={locale}
+                  />
+
                   <form
                     key={`${inspected.id}-config`}
                     action={updateAgentBudget}
@@ -970,7 +1022,7 @@ export function AgentWorkspace2D({
                     </label>
                     <label className="block">
                       <span className="mb-1 block font-mono text-[9px] uppercase tracking-wider text-fog-600">
-                        Hạn mức token/ngày
+                        {tr(locale, "Hạn mức token/ngày")}
                       </span>
                       <input
                         name="daily_token_budget"
@@ -985,9 +1037,9 @@ export function AgentWorkspace2D({
                     <SubmitButton
                       size="sm"
                       variant="secondary"
-                      pendingText="Đang lưu…"
+                      pendingText={tr(locale, "Đang lưu…")}
                     >
-                      Lưu cấu hình
+                      {tr(locale, "Lưu cấu hình")}
                     </SubmitButton>
                   </form>
 
@@ -997,10 +1049,13 @@ export function AgentWorkspace2D({
                     <SubmitButton
                       size="sm"
                       variant="danger"
-                      pendingText="Đang xoá…"
-                      confirm={`Xoá AI "${inspected.name}" khỏi công ty?`}
+                      pendingText={tr(locale, "Đang xoá…")}
+                      confirm={`${tr(locale, "Xoá AI")} "${inspected.name}" ${tr(
+                        locale,
+                        "khỏi công ty?"
+                      )}`}
                     >
-                      Xoá AI này
+                      {tr(locale, "Xoá AI này")}
                     </SubmitButton>
                   </form>
                 </div>
@@ -1010,20 +1065,23 @@ export function AgentWorkspace2D({
                 id="agent-task-form"
                 className="mt-3 scroll-mt-24 border-t border-ink-700 pt-3"
               >
-                <Eyebrow className="mb-2">Giao việc mới</Eyebrow>
+                <Eyebrow className="mb-2">
+                  {tr(locale, "Giao việc mới")}
+                </Eyebrow>
                 <TaskForm
                   key={inspected.id}
                   companyId={company.id}
                   agents={agents}
                   channels={channels}
                   defaultAgentId={inspected.id}
+                  locale={locale}
                 />
               </div>
             </div>
           </div>
         ) : (
           <div className="p-4 text-sm text-fog-500">
-            Chọn một AI trong cây tổ chức để xem chi tiết.
+            {tr(locale, "Chọn một AI trong cây tổ chức để xem chi tiết.")}
           </div>
         )}
       </aside>
@@ -1056,11 +1114,13 @@ function StatusPill({
   active,
   failed,
   review,
+  locale,
 }: {
   agent: AiAgent;
   active: number;
   failed: number;
   review: number;
+  locale: Locale;
 }) {
   const state = agentState(agent, active, failed, review);
   return (
@@ -1072,7 +1132,7 @@ function StatusPill({
         backgroundColor: `${state.color}12`,
       }}
     >
-      {state.label}
+      {tr(locale, state.label)}
     </span>
   );
 }

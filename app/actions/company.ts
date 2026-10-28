@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import {
   agentSchema,
+  agentSettingsSchema,
   agentTaskSchema,
   aiSettingsSchema,
   companySchema,
@@ -277,6 +278,49 @@ export async function updateAgentBudget(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/company/${companyId}`);
+}
+
+export async function updateAgentSettings(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await requireUser();
+
+  let workflow: unknown;
+  try {
+    workflow = JSON.parse(String(formData.get("workflow") ?? "[]"));
+  } catch {
+    return { status: "error", message: "Quy trình AI không hợp lệ." };
+  }
+
+  const parsed = agentSettingsSchema.safeParse({
+    id: formData.get("id"),
+    company_id: formData.get("company_id"),
+    system_prompt: formData.get("system_prompt") ?? undefined,
+    workflow,
+  });
+
+  if (!parsed.success) {
+    return { status: "error", message: firstIssue(parsed.error) };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ai_agents")
+    .update({
+      system_prompt: parsed.data.system_prompt,
+      workflow: parsed.data.workflow as unknown as Json,
+    })
+    .eq("id", parsed.data.id)
+    .eq("company_id", parsed.data.company_id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { status: "error", message: error.message };
+  if (!data) return { status: "error", message: "Không tìm thấy AI." };
+
+  revalidatePath(`/company/${parsed.data.company_id}`);
+  return { status: "success", message: "Đã lưu cấu hình AI." };
 }
 
 export async function removeAgent(formData: FormData) {

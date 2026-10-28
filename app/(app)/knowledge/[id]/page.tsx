@@ -15,6 +15,8 @@ import {
 import { KNOWLEDGE_CATEGORIES } from "@/lib/constants";
 import { ArrowLeftIcon } from "@/components/icons";
 import { formatDateTime } from "@/lib/utils";
+import { getLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n/messages";
 
 export async function generateMetadata({
   params,
@@ -22,13 +24,14 @@ export async function generateMetadata({
   await connection();
   const { id } = await params;
   const doc = await getKnowledgeDoc(id);
-  return { title: doc?.title ?? "Tài liệu" };
+  return { title: doc?.title ?? "Knowledge document" };
 }
 
 export default async function KnowledgeDetailPage({
   params,
 }: PageProps<"/knowledge/[id]">) {
   await connection();
+  const locale = await getLocale();
   const { id } = await params;
   const doc = await getKnowledgeDoc(id);
   if (!doc) notFound();
@@ -40,14 +43,14 @@ export default async function KnowledgeDetailPage({
     <div className="mx-auto max-w-3xl space-y-6 rise-in">
       <header className="space-y-3">
         <Link
-          href="/knowledge"
+          href={doc.company_id ? `/knowledge?company=${doc.company_id}` : "/knowledge"}
           className={buttonStyles("ghost", "sm", "-ml-2 text-fog-500")}
         >
           <ArrowLeftIcon className="size-3.5" />
-          Thư viện tri thức
+          {tr(locale, "Thư viện tri thức")}
         </Link>
         <div>
-          <Eyebrow>{meta.label}</Eyebrow>
+          <Eyebrow>{tr(locale, meta.label)}</Eyebrow>
           <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
             {doc.title}
           </h1>
@@ -55,24 +58,33 @@ export default async function KnowledgeDetailPage({
             {doc.company_id ? (
               <Tag>
                 {companies.find((company) => company.id === doc.company_id)
-                  ?.name ?? "Công ty"}
+                  ?.name ?? tr(locale, "Công ty")}
               </Tag>
             ) : (
-              <Tag>Dùng chung</Tag>
+              <Tag>{tr(locale, "Dùng chung")}</Tag>
             )}
-            {doc.pinned && <Tag>Ghim</Tag>}
-            {doc.active ? <Tag>AI đang dùng</Tag> : <Tag>Tắt</Tag>}
+            {doc.pinned && <Tag>{tr(locale, "Ghim")}</Tag>}
+            {doc.active ? (
+              <Tag>{tr(locale, "AI đang dùng")}</Tag>
+            ) : (
+              <Tag>{tr(locale, "Tắt")}</Tag>
+            )}
             {doc.tags.map((tag) => (
               <Tag key={tag}>{tag}</Tag>
             ))}
             <span className="font-mono text-[10px] text-fog-600">
-              Cập nhật {formatDateTime(doc.updated_at)}
+              {tr(locale, "Cập nhật")}{" "}
+              {formatDateTime(doc.updated_at, locale)}
             </span>
           </div>
         </div>
       </header>
 
-      <Panel eyebrow="Chỉnh sửa" title="Nội dung tài liệu" bodyClassName="p-5">
+      <Panel
+        eyebrow={tr(locale, "Chỉnh sửa")}
+        title={tr(locale, "Nội dung tài liệu")}
+        bodyClassName="p-5"
+      >
         <KnowledgeForm
           mode="edit"
           doc={doc}
@@ -80,18 +92,23 @@ export default async function KnowledgeDetailPage({
             id: company.id,
             name: company.name,
           }))}
+          locale={locale}
         />
       </Panel>
 
-      <Panel eyebrow="Xoá" title="Xoá khỏi bộ nhớ AI" bodyClassName="p-5">
+      <Panel
+        eyebrow={tr(locale, "Xoá")}
+        title={tr(locale, "Xoá khỏi bộ nhớ AI")}
+        bodyClassName="p-5"
+      >
         <form action={deleteKnowledgeDoc}>
           <input type="hidden" name="id" value={doc.id} />
           <SubmitButton
             variant="danger"
-            pendingText="Đang xoá…"
-            confirm={`Xoá tài liệu "${doc.title}"?`}
+            pendingText={tr(locale, "Đang xoá…")}
+            confirm={`${tr(locale, "Xoá tài liệu")} "${doc.title}"?`}
           >
-            Xoá tài liệu
+            {tr(locale, "Xoá tài liệu")}
           </SubmitButton>
         </form>
       </Panel>

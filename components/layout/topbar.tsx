@@ -4,9 +4,16 @@ import { signOut } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { LogoutIcon } from "@/components/icons";
 import type { Profile } from "@/types/database";
+import type { Locale } from "@/lib/i18n/messages";
 
-export function Topbar({ profile }: { profile: Profile | null }) {
-  const isAdmin = profile?.role === "admin";
+export function Topbar({
+  profile,
+  locale,
+}: {
+  profile: Profile | null;
+  locale: Locale;
+}) {
+  const isAdmin = profile?.role === "super_admin";
 
   return (
     <header className="sticky top-0 z-20 border-b border-ink-700 bg-ink-900/85 backdrop-blur md:hidden">
@@ -29,7 +36,7 @@ export function Topbar({ profile }: { profile: Profile | null }) {
         </div>
       </div>
       <div className="border-t border-ink-700 px-3 py-1.5">
-        <NavLinks isAdmin={isAdmin} orientation="horizontal" />
+        <NavLinks isAdmin={isAdmin} locale={locale} orientation="horizontal" />
       </div>
     </header>
   );

@@ -11,6 +11,7 @@ function parseChannelForm(formData: FormData) {
   return channelInputSchema.safeParse({
     name: formData.get("name"),
     platform: formData.get("platform"),
+    company_id: formData.get("company_id") ?? undefined,
     handle: formData.get("handle") ?? undefined,
     url: formData.get("url") ?? undefined,
     region: formData.get("region"),
@@ -21,10 +22,11 @@ function parseChannelForm(formData: FormData) {
   });
 }
 
-function revalidateChannels(id?: string) {
+function revalidateChannels(id?: string, companyId?: string | null) {
   revalidatePath("/dashboard");
   revalidatePath("/channels");
   if (id) revalidatePath(`/channels/${id}`);
+  if (companyId) revalidatePath(`/company/${companyId}`);
   revalidatePath("/admin/channels");
 }
 
@@ -53,8 +55,12 @@ export async function createChannel(
     return { status: "error", message: error.message };
   }
 
-  revalidateChannels(data.id);
-  redirect(`/channels/${data.id}`);
+  revalidateChannels(data.id, parsed.data.company_id);
+  redirect(
+    parsed.data.company_id
+      ? `/channels?company=${parsed.data.company_id}`
+      : `/channels/${data.id}`
+  );
 }
 
 export async function updateChannel(
@@ -83,8 +89,24 @@ export async function updateChannel(
     return { status: "error", message: error.message };
   }
 
-  revalidateChannels(id);
+  revalidateChannels(id, parsed.data.company_id);
   return { status: "success", message: "Đã lưu thay đổi." };
+}
+
+export async function assignChannelToCompany(formData: FormData) {
+  await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const companyId = String(formData.get("company_id") ?? "");
+  if (!id || !companyId) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("channels")
+    .update({ company_id: companyId })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidateChannels(id, companyId);
 }
 
 export async function deleteChannel(formData: FormData) {

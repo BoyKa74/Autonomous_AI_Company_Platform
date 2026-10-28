@@ -7,8 +7,15 @@ import { Tag } from "@/components/ui/kit";
 import { CONTENT_KINDS, CONTENT_STATUSES } from "@/lib/constants";
 import { formatDateTime } from "@/lib/utils";
 import type { ContentItem } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
-export function ContentItemRow({ item }: { item: ContentItem }) {
+export function ContentItemRow({
+  item,
+  locale,
+}: {
+  item: ContentItem;
+  locale: Locale;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,9 +30,9 @@ export function ContentItemRow({ item }: { item: ContentItem }) {
             {item.title}
           </p>
           <p className="mt-0.5 flex items-center gap-2 text-xs text-fog-600">
-            <span>{CONTENT_KINDS[item.kind]}</span>
+            <span>{tr(locale, CONTENT_KINDS[item.kind])}</span>
             <span>·</span>
-            <span>{formatDateTime(item.created_at)}</span>
+            <span>{formatDateTime(item.created_at, locale)}</span>
             {item.ai_provider && (
               <>
                 <span>·</span>
@@ -40,7 +47,7 @@ export function ContentItemRow({ item }: { item: ContentItem }) {
             className="font-mono text-[10.5px] uppercase tracking-wider"
             style={{ color: CONTENT_STATUSES[item.status].color }}
           >
-            {CONTENT_STATUSES[item.status].label}
+            {tr(locale, CONTENT_STATUSES[item.status].label)}
           </span>
         </div>
       </div>
@@ -62,16 +69,16 @@ export function ContentItemRow({ item }: { item: ContentItem }) {
                 name="status"
                 defaultValue={item.status}
                 className="h-8 rounded-md border border-ink-600 bg-ink-800 px-2 text-xs text-fog-100"
-                aria-label="Đổi trạng thái nội dung"
+                aria-label={tr(locale, "Đổi trạng thái nội dung")}
               >
                 {Object.entries(CONTENT_STATUSES).map(([value, meta]) => (
                   <option key={value} value={value}>
-                    {meta.label}
+                    {tr(locale, meta.label)}
                   </option>
                 ))}
               </select>
               <SubmitButton size="sm" variant="secondary" pendingText="…">
-                Lưu trạng thái
+                {tr(locale, "Lưu trạng thái")}
               </SubmitButton>
             </form>
 
@@ -85,14 +92,18 @@ export function ContentItemRow({ item }: { item: ContentItem }) {
               <SubmitButton
                 size="sm"
                 variant="danger"
-                pendingText="Đang xoá…"
-                confirm="Xoá nội dung này?"
+                pendingText={tr(locale, "Đang xoá…")}
+                confirm={tr(locale, "Xoá nội dung này?")}
               >
-                Xoá
+                {tr(locale, "Xoá")}
               </SubmitButton>
             </form>
 
-            <Tag>{item.channel_id ? "Thuộc kênh" : "Chưa gán kênh"}</Tag>
+            <Tag>
+              {item.channel_id
+                ? tr(locale, "Thuộc kênh")
+                : tr(locale, "Chưa gán kênh")}
+            </Tag>
           </div>
         </div>
       )}

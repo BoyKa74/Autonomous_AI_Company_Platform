@@ -24,12 +24,12 @@ export function LoginForm({ next }: { next?: string }) {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="ban@congty.vn"
+          placeholder="you@company.com"
           required
         />
       </Field>
 
-      <Field label="Mật khẩu" htmlFor="password">
+      <Field label="Password" htmlFor="password">
         <Input
           id="password"
           name="password"
@@ -41,8 +41,8 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </Field>
 
-      <SubmitButton className="w-full" pendingText="Đang đăng nhập…">
-        Đăng nhập
+      <SubmitButton className="w-full" pendingText="Signing in…">
+        Sign in
       </SubmitButton>
     </form>
   );

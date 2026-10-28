@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { getChannel, listContentItems } from "@/lib/data";
+import { getChannel, listCompanies, listContentItems } from "@/lib/data";
 import { ChannelForm } from "@/components/channels/channel-form";
 import { ContentItemRow } from "@/components/content/content-item-row";
 import { deleteChannel } from "@/app/actions/channels";
@@ -16,8 +16,11 @@ import {
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ArrowLeftIcon, SparkIcon } from "@/components/icons";
 import { ChannelRowMeta } from "@/components/channels/channel-card";
+import { CompanyNav } from "@/components/company/company-nav";
+import { getLocale } from "@/lib/i18n/server";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { CHANNEL_NICHES } from "@/lib/constants";
+import { tr } from "@/lib/i18n/messages";
 
 export async function generateMetadata({
   params,
@@ -25,7 +28,7 @@ export async function generateMetadata({
   await connection();
   const { id } = await params;
   const channel = await getChannel(id);
-  return { title: channel?.name ?? "Kênh" };
+  return { title: channel?.name ?? "Channel" };
 }
 
 export default async function ChannelDetailPage({
@@ -36,59 +39,97 @@ export default async function ChannelDetailPage({
   const channel = await getChannel(id);
   if (!channel) notFound();
 
-  const items = await listContentItems({ channelId: id, limit: 100 });
+  const [items, companies] = await Promise.all([
+    listContentItems({ channelId: id, limit: 100 }),
+    listCompanies(),
+  ]);
+  const channelCompany = channel.company_id
+    ? companies.find((company) => company.id === channel.company_id) ?? null
+    : null;
+  const locale = await getLocale();
 
   return (
     <div className="space-y-6 rise-in">
       <header className="space-y-3">
         <Link
-          href="/channels"
+          href={
+            channel.company_id
+              ? `/channels?company=${channel.company_id}`
+              : "/channels"
+          }
           className={buttonStyles("ghost", "sm", "-ml-2 text-fog-500")}
         >
           <ArrowLeftIcon className="size-3.5" />
-          Kênh
+          {channel.company_id
+            ? companies.find((entry) => entry.id === channel.company_id)?.name ??
+              tr(locale, "Kênh")
+            : tr(locale, "Kênh")}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Eyebrow>Hồ sơ kênh</Eyebrow>
+            <Eyebrow>{tr(locale, "Hồ sơ kênh")}</Eyebrow>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-fog-100">
               {channel.name}
             </h1>
             <div className="mt-2">
-              <ChannelRowMeta channel={channel} />
+              <ChannelRowMeta channel={channel} locale={locale} />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
-              href={`/ai?channel=${channel.id}`}
+              href={
+                channel.company_id
+                  ? `/company/${channel.company_id}/ai?channel=${channel.id}`
+                  : `/ai?channel=${channel.id}`
+              }
               className={buttonStyles("secondary")}
             >
               <SparkIcon className="size-3.5" />
-              Viết với AI
+              {tr(locale, "Viết với AI")}
             </Link>
             <form action={deleteChannel}>
               <input type="hidden" name="id" value={channel.id} />
               <SubmitButton
                 variant="danger"
-                pendingText="Đang xoá…"
-                confirm={`Xoá kênh "${channel.name}"? Nội dung thuộc kênh sẽ không bị xoá.`}
+                pendingText={tr(locale, "Đang xoá…")}
+                confirm={`${tr(locale, "Xoá kênh")} "${channel.name}"? ${tr(
+                  locale,
+                  "Nội dung thuộc kênh sẽ không bị xoá."
+                )}`}
               >
-                Xoá kênh
+                {tr(locale, "Xoá kênh")}
               </SubmitButton>
             </form>
           </div>
         </div>
       </header>
 
+      {channelCompany && <CompanyNav company={channelCompany} locale={locale} />}
+
       <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-        <Panel eyebrow="Cập nhật" title="Thông tin kênh" bodyClassName="p-5">
-          <ChannelForm mode="edit" channel={channel} />
+        <Panel
+          eyebrow={tr(locale, "Cập nhật")}
+          title={tr(locale, "Thông tin kênh")}
+          bodyClassName="p-5"
+        >
+          <ChannelForm
+            mode="edit"
+            channel={channel}
+            companies={companies.map((entry) => ({
+              id: entry.id,
+              name: entry.name,
+            }))}
+            locale={locale}
+          />
         </Panel>
 
         <div className="space-y-6">
-          <Panel eyebrow="Hồ sơ" title="Chỉ số & liên kết">
+          <Panel
+            eyebrow={tr(locale, "Hồ sơ")}
+            title={tr(locale, "Chỉ số & liên kết")}
+          >
             <dl className="space-y-3">
               <InfoRow label="Follower">
                 <DataValue>{channel.followers.toLocaleString("vi-VN")}</DataValue>
@@ -98,7 +139,7 @@ export default async function ChannelDetailPage({
                   {channel.handle || "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Khu vực">
+              <InfoRow label={tr(locale, "Khu vực")}>
                 <Tag>{channel.region}</Tag>
               </InfoRow>
               <InfoRow label="Link">
@@ -115,48 +156,51 @@ export default async function ChannelDetailPage({
                   <span className="text-sm text-fog-600">—</span>
                 )}
               </InfoRow>
-              <InfoRow label="Mục tiêu">
+              <InfoRow label={tr(locale, "Mục tiêu")}>
                 <span className="text-sm text-fog-300">
                   {channel.goal || "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Ngách">
+              <InfoRow label={tr(locale, "Ngách")}>
                 <span className="text-sm text-fog-300">
                   {channel.niche
-                    ? CHANNEL_NICHES[channel.niche] ?? channel.niche
+                    ? tr(
+                        locale,
+                        CHANNEL_NICHES[channel.niche] ?? channel.niche
+                      )
                     : "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Định dạng">
+              <InfoRow label={tr(locale, "Định dạng")}>
                 <span className="font-mono text-xs text-fog-300">
                   {channel.content_format || "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Kiếm tiền">
+              <InfoRow label={tr(locale, "Kiếm tiền")}>
                 <span className="font-mono text-xs text-fog-300">
                   {channel.monetization || "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Tệp khán giả">
+              <InfoRow label={tr(locale, "Tệp khán giả")}>
                 <span className="text-sm text-fog-300">
                   {channel.target_audience || "—"}
                 </span>
               </InfoRow>
-              <InfoRow label="Ngày tạo">
+              <InfoRow label={tr(locale, "Ngày tạo")}>
                 <span className="font-mono text-xs text-fog-500">
-                  {formatDate(channel.created_at)}
+                  {formatDate(channel.created_at, locale)}
                 </span>
               </InfoRow>
-              <InfoRow label="Cập nhật">
+              <InfoRow label={tr(locale, "Cập nhật")}>
                 <span className="font-mono text-xs text-fog-500">
-                  {formatDateTime(channel.updated_at)}
+                  {formatDateTime(channel.updated_at, locale)}
                 </span>
               </InfoRow>
             </dl>
 
             {channel.ai_brief && (
               <div className="mt-4 rounded-md border border-signal-600/40 bg-signal-500/5 p-3">
-                <Eyebrow className="mb-1">Hướng dẫn cho AI</Eyebrow>
+                <Eyebrow className="mb-1">{tr(locale, "Hướng dẫn cho AI")}</Eyebrow>
                 <p className="whitespace-pre-wrap text-sm text-fog-300">
                   {channel.ai_brief}
                 </p>
@@ -165,7 +209,7 @@ export default async function ChannelDetailPage({
 
             {channel.notes && (
               <div className="mt-4 rounded-md border border-ink-700 bg-ink-900 p-3">
-                <Eyebrow className="mb-1">Ghi chú vận hành</Eyebrow>
+                <Eyebrow className="mb-1">{tr(locale, "Ghi chú vận hành")}</Eyebrow>
                 <p className="whitespace-pre-wrap text-sm text-fog-300">
                   {channel.notes}
                 </p>
@@ -174,25 +218,29 @@ export default async function ChannelDetailPage({
           </Panel>
 
           <Panel
-            eyebrow="Nội dung"
-            title={`Kho nội dung (${items.length})`}
+            eyebrow={tr(locale, "Nội dung")}
+            title={`${tr(locale, "Kho nội dung")} (${items.length})`}
             bodyClassName="p-0"
           >
             {items.length === 0 ? (
               <p className="p-4 text-sm text-fog-500">
-                Chưa có nội dung nào cho kênh này.{" "}
+                {tr(locale, "Chưa có nội dung nào cho kênh này.")}{" "}
                 <Link
-                  href={`/ai?channel=${channel.id}`}
+                  href={
+                channel.company_id
+                  ? `/company/${channel.company_id}/ai?channel=${channel.id}`
+                  : `/ai?channel=${channel.id}`
+              }
                   className="font-medium text-signal-500 hover:text-signal-400"
                 >
-                  Viết cùng AI
+                  {tr(locale, "Viết cùng AI")}
                 </Link>
                 .
               </p>
             ) : (
               <ul className="divide-y divide-ink-700">
                 {items.map((item) => (
-                  <ContentItemRow key={item.id} item={item} />
+                  <ContentItemRow key={item.id} item={item} locale={locale} />
                 ))}
               </ul>
             )}

@@ -9,18 +9,24 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat("vi-VN").format(value);
 }
 
-export function formatDate(value: string | null | undefined): string {
+export function formatDate(
+  value: string | null | undefined,
+  locale: "en" | "vi" = "vi"
+): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
 }
 
-export function formatDateTime(value: string | null | undefined): string {
+export function formatDateTime(
+  value: string | null | undefined,
+  locale: "en" | "vi" = "vi"
+): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -43,8 +49,14 @@ export function signalLevel(value: number, max: number): number {
   return Math.min(1, Math.max(0.04, lv));
 }
 
-export function formatVnd(value: number): string {
-  return `${new Intl.NumberFormat("vi-VN").format(Math.round(value))} ₫`;
+export function formatVnd(
+  value: number,
+  locale: "en" | "vi" = "vi"
+): string {
+  const amount = new Intl.NumberFormat(
+    locale === "en" ? "en-US" : "vi-VN"
+  ).format(Math.round(value));
+  return locale === "en" ? `VND ${amount}` : `${amount} ₫`;
 }
 
 export function formatUsd(value: number): string {

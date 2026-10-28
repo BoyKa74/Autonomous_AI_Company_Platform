@@ -10,8 +10,8 @@ export async function GET() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.role !== "admin") {
-    return jsonError(403, "Chỉ admin được truy cập");
+  if (profile?.role !== "super_admin") {
+    return jsonError(403, "Chỉ super_admin được truy cập");
   }
 
   const { data, error } = await supabase

@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { Robot } from "@/components/company/office/robot";
 import { AGENT_ROLES } from "@/lib/constants";
 import type { AiAgent } from "@/types/database";
+import { tr, type Locale } from "@/lib/i18n/messages";
 
 const FONT_SEMIBOLD = "/fonts/BeVietnamPro-SemiBold.ttf";
 const FONT_REGULAR = "/fonts/BeVietnamPro-Regular.ttf";
@@ -25,6 +26,7 @@ export function Workstation({
   dark,
   tier,
   isLeader,
+  locale,
 }: {
   agent: AiAgent;
   position: [number, number, number];
@@ -34,6 +36,7 @@ export function Workstation({
   dark: boolean;
   tier: number;
   isLeader: boolean;
+  locale: Locale;
 }) {
   const [hovered, setHovered] = useState(false);
   const paused = agent.status === "paused";
@@ -195,8 +198,12 @@ export function Workstation({
           anchorY="middle"
           position={[0, -0.13, 0.02]}
         >
-          T{tier} · {AGENT_ROLES[agent.role].label.toUpperCase()}
-          {active ? " · ĐANG LÀM" : paused ? " · TẠM DỪNG" : ""}
+          T{tier} · {tr(locale, AGENT_ROLES[agent.role].label).toUpperCase()}
+          {active
+            ? ` · ${tr(locale, "ĐANG LÀM")}`
+            : paused
+              ? ` · ${tr(locale, "TẠM DỪNG")}`
+              : ""}
         </Text>
         {isLeader && (
           <mesh position={[0, 0.55, 0]}>

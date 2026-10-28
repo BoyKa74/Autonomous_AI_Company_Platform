@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/kit";
 import { CONTENT_KINDS } from "@/lib/constants";
 import { CopyIcon, SparkIcon } from "@/components/icons";
+import { tr, type Locale } from "@/lib/i18n/messages";
 import type { ChannelPlatform } from "@/types/database";
 
 type ProviderInfo = {
@@ -38,11 +39,13 @@ export function AiStudio({
   providers,
   taskOptions,
   defaultChannelId,
+  locale,
 }: {
   channels: { id: string; name: string; platform: ChannelPlatform }[];
   providers: ProviderInfo[];
   taskOptions: TaskOption[];
   defaultChannelId?: string;
+  locale: Locale;
 }) {
   const [task, setTask] = useState(taskOptions[0]?.value ?? "general");
   const [provider, setProvider] = useState("auto");
@@ -79,14 +82,14 @@ export function AiStudio({
           setResult(null);
           setError(
             (data as { error?: string }).error ??
-              "Không gọi được AI. Thử lại."
+              tr(locale, "Không gọi được AI. Thử lại.")
           );
           return;
         }
 
         setResult(data as GenerateResponse);
       } catch {
-        setError("Lỗi kết nối tới máy chủ.");
+        setError(tr(locale, "Lỗi kết nối tới máy chủ."));
       }
     });
   }
@@ -96,15 +99,14 @@ export function AiStudio({
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <div className="space-y-6">
-        <Panel eyebrow="Cấu hình" title="Yêu cầu" bodyClassName="space-y-4 p-5">
+        <Panel eyebrow={tr(locale, "Cấu hình Studio")} title={tr(locale, "Yêu cầu")} bodyClassName="space-y-4 p-5">
           {configuredCount === 0 && (
             <Alert tone="error">
-              Chưa có API key AI nào. Thêm key vào .env.local rồi khởi động lại
-              server.
+              {tr(locale, "Chưa có API key AI nào. Thêm key vào .env.local rồi khởi động lại server.")}
             </Alert>
           )}
 
-          <Field label="Loại việc" htmlFor="task">
+          <Field label={tr(locale, "Loại việc")} htmlFor="task">
             <Select
               id="task"
               value={task}
@@ -112,7 +114,7 @@ export function AiStudio({
             >
               {taskOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {tr(locale, option.label)}
                 </option>
               ))}
             </Select>
@@ -121,14 +123,14 @@ export function AiStudio({
           <Field
             label="Provider"
             htmlFor="provider"
-            hint="Auto sẽ tự chọn và fallback nếu provider lỗi."
+            hint={tr(locale, "Auto sẽ tự chọn và fallback nếu provider lỗi.")}
           >
             <Select
               id="provider"
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
             >
-              <option value="auto">Tự động (khuyến nghị)</option>
+              <option value="auto">{tr(locale, "Tự động (khuyến nghị)")}</option>
               {providers.map((item) => (
                 <option
                   key={item.name}
@@ -136,19 +138,21 @@ export function AiStudio({
                   disabled={!item.configured}
                 >
                   {item.label}
-                  {item.configured ? ` · ${item.model}` : " · chưa có key"}
+                  {item.configured
+                    ? ` · ${item.model}`
+                    : " · " + tr(locale, "chưa có key")}
                 </option>
               ))}
             </Select>
           </Field>
 
-          <Field label="Gắn với kênh" htmlFor="channel">
+          <Field label={tr(locale, "Gắn với kênh")} htmlFor="channel">
             <Select
               id="channel"
               value={channelId}
               onChange={(event) => setChannelId(event.target.value)}
             >
-              <option value="">Không gắn kênh</option>
+              <option value="">{tr(locale, "Không gắn kênh")}</option>
               {channels.map((channel) => (
                 <option key={channel.id} value={channel.id}>
                   {channel.name}
@@ -157,23 +161,23 @@ export function AiStudio({
             </Select>
           </Field>
 
-          <Field label="Giọng điệu" htmlFor="tone">
+          <Field label={tr(locale, "Giọng điệu")} htmlFor="tone">
             <Input
               id="tone"
               value={tone}
               onChange={(event) => setTone(event.target.value)}
-              placeholder="VD: hài hước, chuyên gia, gần gũi…"
+              placeholder={tr(locale, "VD: hài hước, chuyên gia, gần gũi…")}
               maxLength={120}
             />
           </Field>
 
-          <Field label="Yêu cầu chi tiết" htmlFor="prompt">
+          <Field label={tr(locale, "Yêu cầu chi tiết")} htmlFor="prompt">
             <Textarea
               id="prompt"
               rows={7}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="VD: Viết kịch bản 8 phút về 5 lỗi khi mua hàng online, hướng tới khán giả 25-35 tuổi…"
+              placeholder={tr(locale, "VD: Viết kịch bản 8 phút về 5 lỗi khi mua hàng online, hướng tới khán giả 25-35 tuổi…")}
               maxLength={20000}
             />
           </Field>
@@ -185,11 +189,11 @@ export function AiStudio({
             className={buttonStyles("primary", "md", "w-full")}
           >
             <SparkIcon className="size-3.5" />
-            {loading ? "AI đang viết…" : "Tạo nội dung"}
+            {loading ? tr(locale, "AI đang viết…") : tr(locale, "Tạo nội dung")}
           </button>
         </Panel>
 
-        <Panel eyebrow="Provider" title="Trạng thái" bodyClassName="p-0">
+        <Panel eyebrow="Provider" title={tr(locale, "Trạng thái")} bodyClassName="p-0">
           <ul className="divide-y divide-ink-700">
             {providers.map((item) => (
               <li
@@ -208,7 +212,7 @@ export function AiStudio({
                   {item.label}
                 </span>
                 <span className="font-mono text-[10.5px] text-fog-600">
-                  {item.configured ? item.model : "chưa cấu hình"}
+                  {item.configured ? item.model : tr(locale, "chưa cấu hình")}
                 </span>
               </li>
             ))}
@@ -218,8 +222,8 @@ export function AiStudio({
 
       <div className="space-y-6">
         <Panel
-          eyebrow="Kết quả"
-          title={result ? `${result.provider} · ${result.model}` : "Bản nháp"}
+          eyebrow={tr(locale, "Kết quả")}
+          title={result ? `${result.provider} · ${result.model}` : tr(locale, "Bản nháp")}
           actions={
             result && (
               <button
@@ -231,7 +235,7 @@ export function AiStudio({
                 className={buttonStyles("ghost", "sm")}
               >
                 <CopyIcon className="size-3.5" />
-                {copied ? "Đã copy" : "Copy"}
+                {copied ? tr(locale, "Đã copy") : "Copy"}
               </button>
             )
           }
@@ -247,11 +251,10 @@ export function AiStudio({
             <div className="flex min-h-72 flex-col items-center justify-center gap-2 p-8 text-center">
               <SparkIcon className="size-6 text-ink-500" />
               <p className="text-sm text-fog-500">
-                Mô tả yêu cầu bên trái và bấm Tạo nội dung.
+                {tr(locale, "Mô tả yêu cầu bên trái và bấm Tạo nội dung.")}
               </p>
               <p className="max-w-sm text-xs text-fog-600">
-                Kịch bản, chương sách, caption, chiến lược kênh — AI router sẽ
-                chọn provider phù hợp nhất.
+                {tr(locale, "Kịch bản, chương sách, caption, chiến lược kênh — AI router sẽ chọn provider phù hợp nhất.")}
               </p>
             </div>
           )}
@@ -271,6 +274,7 @@ export function AiStudio({
             content={result.text}
             provider={result.provider}
             defaultChannelId={channelId}
+            locale={locale}
           />
         )}
       </div>
@@ -282,15 +286,17 @@ function SavePanel({
   content,
   provider,
   defaultChannelId,
+  locale,
 }: {
   content: string;
   provider: string;
   defaultChannelId?: string;
+  locale: Locale;
 }) {
   const [state, action] = useActionState(saveContent, initialFormState);
 
   return (
-    <Panel eyebrow="Lưu trữ" title="Lưu vào kho nội dung">
+    <Panel eyebrow={tr(locale, "Thư viện")} title={tr(locale, "Lưu vào kho nội dung")}>
       <form action={action} className="space-y-4">
         {state.status === "error" && (
           <Alert tone="error">{state.message}</Alert>
@@ -308,28 +314,28 @@ function SavePanel({
         />
 
         <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
-          <Field label="Tiêu đề" htmlFor="title">
+          <Field label={tr(locale, "Tiêu đề")} htmlFor="title">
             <Input
               id="title"
               name="title"
-              placeholder="Tiêu đề gợi nhớ nội dung"
+              placeholder={tr(locale, "Tiêu đề gợi nhớ nội dung")}
               required
               maxLength={200}
             />
           </Field>
-          <Field label="Loại" htmlFor="kind">
+          <Field label={tr(locale, "Loại")} htmlFor="kind">
             <Select id="kind" name="kind" defaultValue="other">
               {Object.entries(CONTENT_KINDS).map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {tr(locale, label)}
                 </option>
               ))}
             </Select>
           </Field>
         </div>
 
-        <SubmitButton pendingText="Đang lưu…">
-          Lưu vào kho nội dung
+        <SubmitButton pendingText={tr(locale, "Đang lưu…")}>
+          {tr(locale, "Lưu vào kho nội dung")}
         </SubmitButton>
       </form>
     </Panel>

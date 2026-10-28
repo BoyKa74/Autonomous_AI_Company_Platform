@@ -6,6 +6,7 @@ import {
   AgentWorkspace2D,
   DARK_WORKSPACE_STYLE,
 } from "@/components/company/agent-workspace-2d";
+import { AgentSettingsForm } from "@/components/company/agent-settings-form";
 import { OrgScene } from "@/components/company/org-scene";
 import { TaskForm } from "@/components/company/task-form";
 import { TaskList } from "@/components/company/task-list";
@@ -21,6 +22,7 @@ import { DataValue, Eyebrow, Panel, Tag } from "@/components/ui/kit";
 import { AGENT_ROLES, TASK_STATUSES } from "@/lib/constants";
 import { OPENCODE_FREE_MODELS } from "@/lib/ai/free-models";
 import { tierMeta } from "@/lib/economy";
+import { tr, type Locale } from "@/lib/i18n/messages";
 import type {
   AgentTask,
   AiAgent,
@@ -39,6 +41,7 @@ export function CompanyWorkspace({
   channels,
   headless = false,
   tokenUsage = {},
+  locale,
 }: {
   company: Company;
   agents: AiAgent[];
@@ -48,7 +51,9 @@ export function CompanyWorkspace({
   channels: { id: string; name: string }[];
   headless?: boolean;
   tokenUsage?: Record<string, number>;
+  locale: Locale;
 }) {
+  const numberLocale = locale === "en" ? "en-US" : "vi-VN";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"tree" | "3d">("tree");
   const [spinning, setSpinning] = useState(false);
@@ -146,7 +151,9 @@ export function CompanyWorkspace({
       } catch (error) {
         if (!cancelled) {
           setAutoMessage(
-            error instanceof Error ? error.message : "Lỗi khi tự chạy."
+            error instanceof Error
+              ? error.message
+              : tr(locale, "Lỗi khi tự chạy.")
           );
         }
       } finally {
@@ -160,7 +167,7 @@ export function CompanyWorkspace({
       cancelled = true;
       clearInterval(timer);
     };
-  }, [auto, company.id, router]);
+  }, [auto, company.id, router, locale]);
 
   const handlePlan = async () => {
     if (!aiReady || planning) return;
@@ -172,7 +179,9 @@ export function CompanyWorkspace({
       router.refresh();
     } catch (error) {
       setAutoMessage(
-        error instanceof Error ? error.message : "Lỗi khi lập kế hoạch."
+        error instanceof Error
+          ? error.message
+          : tr(locale, "Lỗi khi lập kế hoạch.")
       );
     } finally {
       setPlanning(false);
@@ -189,7 +198,9 @@ export function CompanyWorkspace({
       router.refresh();
     } catch (error) {
       setAutoMessage(
-        error instanceof Error ? error.message : "Lỗi khi CEO kiểm tra."
+        error instanceof Error
+          ? error.message
+          : tr(locale, "Lỗi khi CEO kiểm tra.")
       );
     } finally {
       setAuditing(false);
@@ -227,9 +238,11 @@ export function CompanyWorkspace({
       <div style={view === "tree" ? DARK_WORKSPACE_STYLE : undefined}
       className={`${view === "tree" ? "workspace-dark" : ""} flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-700 bg-ink-900/70 px-3 py-2`}>
         <div className="flex items-center gap-2">
-          <Eyebrow>Không gian điều hành</Eyebrow>
+          <Eyebrow>{tr(locale, "Không gian điều hành")}</Eyebrow>
           <span className="font-mono text-[10px] text-fog-600">
-            {view === "tree" ? "Multi-Agent Workspace" : "Văn phòng 3D"}
+            {view === "tree"
+              ? "Multi-Agent Workspace"
+              : tr(locale, "Văn phòng 3D")}
           </span>
         </div>
         <div className="flex overflow-hidden rounded-md border border-ink-600">
@@ -253,7 +266,7 @@ export function CompanyWorkspace({
                 : "px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
             }
           >
-            Văn phòng 3D
+            {tr(locale, "Văn phòng 3D")}
           </button>
         </div>
       </div>
@@ -270,6 +283,7 @@ export function CompanyWorkspace({
           onSelect={setSelectedId}
           tokenUsage={tokenUsage}
           aiReady={aiReady}
+          locale={locale}
           auto={auto}
           onToggleAuto={() => {
             setAuto((value) => !value);
@@ -284,12 +298,15 @@ export function CompanyWorkspace({
       ) : (
         <>
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="overflow-hidden rounded-xl border border-ink-700 bg-ink-850">
+        <div
+          id="workspace-tree"
+          className="overflow-hidden rounded-xl border border-ink-700 bg-ink-850"
+        >
           <header className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-700 px-4 py-3">
             <div>
-              <Eyebrow>Văn phòng AI · 3D</Eyebrow>
+              <Eyebrow>{tr(locale, "Văn phòng AI · 3D")}</Eyebrow>
               <h2 className="mt-0.5 font-display text-sm font-semibold text-fog-100">
-                {agents.length} robot đang làm việc
+                {agents.length} {tr(locale, "robot đang làm việc")}
               </h2>
             </div>
             <div className="flex items-center gap-3">
@@ -305,7 +322,7 @@ export function CompanyWorkspace({
                         className="inline-block size-1.5 rounded-full"
                         style={{ backgroundColor: AGENT_ROLES[role].color }}
                       />
-                      {AGENT_ROLES[role].label}
+                      {tr(locale, AGENT_ROLES[role].label)}
                     </span>
                   ))}
               </div>
@@ -314,7 +331,7 @@ export function CompanyWorkspace({
                 onClick={() => setSpinning((value) => !value)}
                 className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100"
               >
-                {spinning ? "Dừng xoay" : "Tự xoay"}
+                {spinning ? tr(locale, "Dừng xoay") : tr(locale, "Tự xoay")}
               </button>
               <button
                 type="button"
@@ -323,11 +340,13 @@ export function CompanyWorkspace({
                 className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100 disabled:opacity-50"
                 title={
                   aiReady
-                    ? "CEO kiểm tra toàn công ty và lưu báo cáo"
-                    : "Cần API key AI để CEO kiểm tra"
+                    ? tr(locale, "CEO kiểm tra toàn công ty và lưu báo cáo")
+                    : tr(locale, "Cần API key AI để CEO kiểm tra")
                 }
               >
-                {auditing ? "Đang kiểm tra…" : "CEO kiểm tra"}
+                {auditing
+                  ? tr(locale, "Đang kiểm tra…")
+                  : tr(locale, "CEO kiểm tra")}
               </button>
               <button
                 type="button"
@@ -336,11 +355,13 @@ export function CompanyWorkspace({
                 className="rounded-md border border-ink-600 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 transition-colors hover:bg-ink-800 hover:text-fog-100 disabled:opacity-50"
                 title={
                   aiReady
-                    ? "CEO tự lập kế hoạch và giao việc cho các AI"
-                    : "Cần API key AI để CEO lập kế hoạch"
+                    ? tr(locale, "CEO tự lập kế hoạch và giao việc cho các AI")
+                    : tr(locale, "Cần API key AI để CEO lập kế hoạch")
                 }
               >
-                {planning ? "Đang lập…" : "CEO lập kế hoạch"}
+                {planning
+                  ? tr(locale, "Đang lập…")
+                  : tr(locale, "CEO lập kế hoạch")}
               </button>
               <button
                 type="button"
@@ -356,11 +377,19 @@ export function CompanyWorkspace({
                 }
                 title={
                   aiReady
-                    ? "AI tự chạy từng bước của dây chuyền. Tốn ngân sách AI, tắt bất cứ lúc nào."
-                    : "Chưa có API key AI — thêm OPENAI_API_KEY / GOOGLE_API_KEY vào .env.local rồi khởi động lại server."
+                    ? tr(
+                        locale,
+                        "AI tự chạy từng bước của dây chuyền. Tốn ngân sách AI, tắt bất cứ lúc nào."
+                      )
+                    : tr(
+                        locale,
+                        "Chưa có API key AI — thêm OPENAI_API_KEY / GOOGLE_API_KEY vào .env.local rồi khởi động lại server."
+                      )
                 }
               >
-                {auto ? "Tự động: BẬT" : "Tự động: TẮT"}
+                {auto
+                  ? tr(locale, "Tự động: BẬT")
+                  : tr(locale, "Tự động: TẮT")}
               </button>
               <div className="flex overflow-hidden rounded-md border border-ink-600">
                 <button
@@ -372,7 +401,7 @@ export function CompanyWorkspace({
                       : "bg-signal-500 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[#241503]"
                   }
                 >
-                  Ngày
+                  {tr(locale, "Ngày")}
                 </button>
                 <button
                   type="button"
@@ -383,14 +412,16 @@ export function CompanyWorkspace({
                       : "px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-fog-500 hover:bg-ink-800"
                   }
                 >
-                  Đêm
+                  {tr(locale, "Đêm")}
                 </button>
               </div>
             </div>
             {!aiReady && (
               <p className="mt-1 text-right text-[11px] text-warn-400">
-                Chưa có API key AI — thêm GOOGLE_API_KEY/OPENAI_API_KEY vào
-                .env.local để bật tự động.
+                {tr(
+                  locale,
+                  "Chưa có API key AI — thêm GOOGLE_API_KEY/OPENAI_API_KEY vào .env.local để bật tự động."
+                )}
               </p>
             )}
             {autoMessage && (
@@ -404,16 +435,19 @@ export function CompanyWorkspace({
             {headless ? (
               <div className="flex h-full items-center justify-center">
                 <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-fog-600">
-                  Autopilot mode · 3D tắt để chạy nền
+                  {tr(locale, "Autopilot mode · 3D tắt để chạy nền")}
                 </p>
               </div>
             ) : agents.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
                 <p className="font-display text-sm font-semibold text-fog-100">
-                  Công ty chưa có AI nào
+                  {tr(locale, "Công ty chưa có AI nào")}
                 </p>
                 <p className="max-w-xs text-sm text-fog-500">
-                  Cài cơ cấu mẫu hoặc thêm AI thủ công ở khung bên phải.
+                  {tr(
+                    locale,
+                    "Cài cơ cấu mẫu hoặc thêm AI thủ công ở khung bên phải."
+                  )}
                 </p>
               </div>
             ) : (
@@ -428,10 +462,13 @@ export function CompanyWorkspace({
                   dark={dark}
                   handoffs={handoffs}
                   leaderId={leaderId}
+                  locale={locale}
                 />
                 <p className="pointer-events-none absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.18em] text-fog-600">
-                  Tự động: CEO tự lập kế hoạch khi hàng đợi trống · robot cầm
-                  tệp = đang giao việc · tầng cao = hiệu suất cao
+                  {tr(
+                    locale,
+                    "Tự động: CEO tự lập kế hoạch khi hàng đợi trống · robot cầm tệp = đang giao việc · tầng cao = hiệu suất cao"
+                  )}
                 </p>
               </>
             )}
@@ -440,8 +477,12 @@ export function CompanyWorkspace({
 
         <div className="space-y-6">
           <Panel
-            eyebrow="Chi tiết"
-            title={selected ? selected.name : "Chọn một AI trên sơ đồ"}
+            eyebrow={tr(locale, "Chi tiết")}
+            title={
+              selected
+                ? selected.name
+                : tr(locale, "Chọn một AI trên sơ đồ")
+            }
             bodyClassName="p-4"
           >
             {selected ? (
@@ -451,70 +492,91 @@ export function CompanyWorkspace({
                     className="font-mono text-[10.5px] uppercase tracking-wider"
                     style={{ color: AGENT_ROLES[selected.role].color }}
                   >
-                    {AGENT_ROLES[selected.role].label}
+                    {tr(locale, AGENT_ROLES[selected.role].label)}
                   </span>
-                  {selected.status === "paused" && <Tag>tạm dừng</Tag>}
+                  {selected.status === "paused" && (
+                    <Tag>{tr(locale, "tạm dừng")}</Tag>
+                  )}
                   {(activeByAgent[selected.id] ?? 0) > 0 && (
                     <Tag className="text-signal-500">
-                      {activeByAgent[selected.id]} việc đang xử lý
+                      {activeByAgent[selected.id]}{" "}
+                      {tr(locale, "việc đang xử lý")}
                     </Tag>
                   )}
                 </div>
 
                 <p className="text-sm text-fog-300">
-                  {selected.title || "Chưa có chức danh"}
+                  {selected.title || tr(locale, "Chưa có chức danh")}
                 </p>
 
                 <dl className="space-y-1.5 text-xs">
                   <div className="flex justify-between gap-3">
                     <dt className="text-fog-600">Provider</dt>
                     <dd className="font-mono text-fog-300">
-                      {selected.provider || "router tự chọn"}
+                      {selected.provider || tr(locale, "router tự chọn")}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-fog-600">Model</dt>
                     <dd className="font-mono text-fog-300">
-                      {selected.model || "mặc định provider"}
+                      {selected.model || tr(locale, "mặc định provider")}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Trần token/lần</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Trần token/lần")}
+                    </dt>
                     <dd className="font-mono text-fog-300">
-                      {selected.max_tokens_per_run.toLocaleString("vi-VN")}
+                      {selected.max_tokens_per_run.toLocaleString(numberLocale)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Hạn mức token/ngày</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Hạn mức token/ngày")}
+                    </dt>
                     <dd className="font-mono text-fog-300">
-                      {selected.daily_token_budget.toLocaleString("vi-VN")}
+                      {selected.daily_token_budget.toLocaleString(numberLocale)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Token đã dùng hôm nay</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Token đã dùng hôm nay")}
+                    </dt>
                     <dd className="font-mono text-fog-300">
-                      {(tokenUsage[selected.id] ?? 0).toLocaleString("vi-VN")} /{" "}
-                      {selected.daily_token_budget.toLocaleString("vi-VN")}
+                      {(tokenUsage[selected.id] ?? 0).toLocaleString(
+                        numberLocale
+                      )}{" "}
+                      /{" "}
+                      {selected.daily_token_budget.toLocaleString(numberLocale)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Tầng / hạng</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Tầng / hạng")}
+                    </dt>
                     <dd className="font-mono text-fog-300">
-                      T{selected.tier} · {tierMeta(selected.tier).name}
+                      T{selected.tier} ·{" "}
+                      {tr(locale, tierMeta(selected.tier).name)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Lương đã tạo</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Lương đã tạo")}
+                    </dt>
                     <dd className="font-mono text-ok-400">
                       ${Number(selected.earnings_usd).toFixed(2)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Điểm hiệu suất</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Điểm hiệu suất")}
+                    </dt>
                     <dd className="font-mono text-fog-300">{selected.score}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-fog-600">Việc duyệt / bị từ chối</dt>
+                    <dt className="text-fog-600">
+                      {tr(locale, "Việc duyệt / bị từ chối")}
+                    </dt>
                     <dd className="font-mono text-fog-300">
                       {selected.tasks_completed} / {selected.tasks_failed}
                     </dd>
@@ -529,6 +591,20 @@ export function CompanyWorkspace({
                     </pre>
                   </div>
                 )}
+
+                <details className="rounded-md border border-ink-700 bg-ink-900 p-3">
+                  <summary className="cursor-pointer text-xs font-medium text-fog-300">
+                    {tr(locale, "Sửa prompt & workflow")}
+                  </summary>
+                  <div className="mt-3">
+                    <AgentSettingsForm
+                      key={`${selected.id}-settings`}
+                      agent={selected}
+                      companyId={company.id}
+                      locale={locale}
+                    />
+                  </div>
+                </details>
 
                 <form
                   action={updateAgentBudget}
@@ -561,7 +637,7 @@ export function CompanyWorkspace({
                   </label>
                   <label className="flex-1">
                     <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-fog-600">
-                      Hạn mức token/ngày
+                      {tr(locale, "Hạn mức token/ngày")}
                     </span>
                     <input
                       name="daily_token_budget"
@@ -576,9 +652,9 @@ export function CompanyWorkspace({
                   <SubmitButton
                     size="sm"
                     variant="secondary"
-                    pendingText="Đang lưu…"
+                    pendingText={tr(locale, "Đang lưu…")}
                   >
-                    Lưu
+                    {tr(locale, "Lưu")}
                   </SubmitButton>
                 </form>
 
@@ -592,28 +668,38 @@ export function CompanyWorkspace({
                   <SubmitButton
                     size="sm"
                     variant="danger"
-                    pendingText="Đang xoá…"
-                    confirm={`Xoá AI "${selected.name}" khỏi công ty?`}
+                    pendingText={tr(locale, "Đang xoá…")}
+                    confirm={`${tr(locale, "Xoá AI")} "${selected.name}" ${tr(
+                      locale,
+                      "khỏi công ty?"
+                    )}`}
                   >
-                    Xoá AI này
+                    {tr(locale, "Xoá AI này")}
                   </SubmitButton>
                 </form>
               </div>
             ) : (
               <p className="text-sm text-fog-500">
-                Bấm vào một robot trong văn phòng 3D để xem chức danh, prompt và
-                nhiệm vụ của AI đó.
+                {tr(
+                  locale,
+                  "Bấm vào một robot trong văn phòng 3D để xem chức danh, prompt và nhiệm vụ của AI đó."
+                )}
               </p>
             )}
           </Panel>
 
-          <Panel eyebrow="Giao việc" title="Nhiệm vụ mới" bodyClassName="p-4">
+          <Panel
+            eyebrow={tr(locale, "Giao việc")}
+            title={tr(locale, "Nhiệm vụ mới")}
+            bodyClassName="p-4"
+          >
             <TaskForm
               key={selectedId ?? "none"}
               companyId={company.id}
               agents={agents}
               channels={channels}
               defaultAgentId={selectedId}
+              locale={locale}
             />
           </Panel>
         </div>
@@ -621,7 +707,7 @@ export function CompanyWorkspace({
 
       {workflowAgent && (
         <Panel
-          eyebrow="Dây chuyền của AI"
+          eyebrow={tr(locale, "Dây chuyền của AI")}
           title={`${workflowAgent.name} · ${workflowAgent.title ?? workflowAgent.name}`}
           bodyClassName="p-4"
         >
@@ -629,6 +715,7 @@ export function CompanyWorkspace({
             agent={workflowAgent}
             task={workflowTask}
             agents={agents}
+            locale={locale}
           />
         </Panel>
       )}
@@ -645,13 +732,13 @@ export function CompanyWorkspace({
       >
       <Panel
         id="reports"
-        eyebrow="Báo cáo CEO"
+        eyebrow={tr(locale, "Báo cáo CEO")}
         title={
           reports.length > 0
-            ? `Kiểm tra toàn công ty · ${new Date(
+            ? `${tr(locale, "Kiểm tra toàn công ty")} · ${new Date(
                 reports[0].created_at
-              ).toLocaleString("vi-VN")}`
-            : "Chưa có báo cáo CEO"
+              ).toLocaleString(numberLocale)}`
+            : tr(locale, "Chưa có báo cáo CEO")
         }
         bodyClassName="p-4"
       >
@@ -661,19 +748,21 @@ export function CompanyWorkspace({
           </pre>
         ) : (
           <p className="text-sm text-fog-500">
-            Bấm “CEO kiểm tra” ở trên để CEO đọc số liệu thật (việc, lương, ngân
-            sách, doanh thu) và báo cáo tình hình công ty.
+            {tr(
+              locale,
+              "Bấm “CEO kiểm tra” ở trên để CEO đọc số liệu thật (việc, lương, ngân sách, doanh thu) và báo cáo tình hình công ty."
+            )}
           </p>
         )}
       </Panel>
 
       <Panel
         id="tasks"
-        eyebrow="Tiến độ"
+        eyebrow={tr(locale, "Tiến độ")}
         title={
           selected
-            ? `Nhiệm vụ của ${selected.name} (${focusedTasks.length})`
-            : `Tất cả nhiệm vụ (${tasks.length})`
+            ? `${tr(locale, "Nhiệm vụ của")} ${selected.name} (${focusedTasks.length})`
+            : `${tr(locale, "Tất cả nhiệm vụ")} (${tasks.length})`
         }
         actions={
           selected ? (
@@ -682,7 +771,7 @@ export function CompanyWorkspace({
               onClick={() => setSelectedId(null)}
               className="font-mono text-[10px] uppercase tracking-wider text-fog-500 hover:text-fog-100"
             >
-              Xem tất cả
+              {tr(locale, "Xem tất cả")}
             </button>
           ) : undefined
         }
@@ -692,17 +781,20 @@ export function CompanyWorkspace({
           tasks={focusedTasks}
           agentNames={agentNames}
           channels={channels}
+          locale={locale}
         />
       </Panel>
 
       <Panel
         id="leaderboard"
-        eyebrow="Kinh tế AI"
-        title="Bảng lương & thăng tầng"
+        eyebrow={tr(locale, "Kinh tế AI")}
+        title={tr(locale, "Bảng lương & thăng tầng")}
         bodyClassName="p-0"
       >
         {leaderboard.length === 0 ? (
-          <p className="p-4 text-sm text-fog-500">Chưa có AI nào trong công ty.</p>
+          <p className="p-4 text-sm text-fog-500">
+            {tr(locale, "Chưa có AI nào trong công ty.")}
+          </p>
         ) : (
           <ul className="divide-y divide-ink-700">
             {leaderboard.slice(0, 10).map((agent, index) => {
@@ -738,11 +830,14 @@ export function CompanyWorkspace({
                       className="block text-xs"
                       style={{ color: meta.color }}
                     >
-                      Tầng {agent.tier} · {meta.name} · {agent.score} điểm
+                      {tr(locale, "Tầng")} {agent.tier} ·{" "}
+                      {tr(locale, meta.name)} · {agent.score}{" "}
+                      {tr(locale, "điểm")}
                     </span>
                   </button>
                   <span className="hidden font-mono text-xs tabular-nums text-fog-500 sm:block">
-                    {agent.tasks_completed} đạt / {agent.tasks_failed} lỗi
+                    {agent.tasks_completed} {tr(locale, "đạt")} /{" "}
+                    {agent.tasks_failed} {tr(locale, "lỗi")}
                   </span>
                   <span className="hidden font-mono text-xs tabular-nums text-fog-500 sm:block">
                     {winRate}%
@@ -756,11 +851,10 @@ export function CompanyWorkspace({
           </ul>
         )}
         <p className="border-t border-ink-700 px-4 py-2.5 text-xs leading-relaxed text-fog-600">
-          Luật chơi: chỉ việc được con người duyệt mới được trả lương; bị từ
-          chối thì trừ điểm và giảm thưởng. Đủ điểm thì thăng tầng, tụt điểm thì
-          xuống tầng. AI không được tự tiêu tiền, tự phát hành hay vượt quyền.
-          Đơn vị USD là giá trị đầu ra ước tính theo bảng thưởng, chưa phải
-          doanh thu thực tế.
+          {tr(
+            locale,
+            "Luật chơi: chỉ việc được con người duyệt mới được trả lương; bị từ chối thì trừ điểm và giảm thưởng. Đủ điểm thì thăng tầng, tụt điểm thì xuống tầng. AI không được tự tiêu tiền, tự phát hành hay vượt quyền. Đơn vị USD là giá trị đầu ra ước tính theo bảng thưởng, chưa phải doanh thu thực tế."
+          )}
         </p>
       </Panel>
 
@@ -771,7 +865,7 @@ export function CompanyWorkspace({
             className="font-mono text-[10px] uppercase tracking-wider"
             style={{ color: TASK_STATUSES[status].color }}
           >
-            ● {TASK_STATUSES[status].label}
+            ● {tr(locale, TASK_STATUSES[status].label)}
           </span>
         ))}
       </div>

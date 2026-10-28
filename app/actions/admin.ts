@@ -13,14 +13,17 @@ export async function updateUserRole(
 ): Promise<FormState> {
   const me = await requireAdmin();
   const userId = String(formData.get("user_id") ?? "");
-  const role = z.enum(["user", "admin"]).safeParse(formData.get("role"));
+  const role = z.enum(["user", "admin", "super_admin"]).safeParse(formData.get("role"));
 
   if (!userId || !role.success) {
     return { status: "error", message: "Dữ liệu không hợp lệ." };
   }
 
-  if (userId === me.id && role.data !== "admin") {
-    return { status: "error", message: "Không thể tự thu quyền admin của mình." };
+  if (userId === me.id && role.data !== "super_admin") {
+    return {
+      status: "error",
+      message: "Không thể tự thu quyền super_admin của mình.",
+    };
   }
 
   const supabase = await createClient();

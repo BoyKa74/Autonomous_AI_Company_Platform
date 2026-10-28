@@ -67,6 +67,15 @@ export const channelInputSchema = z.object({
     .min(1, "Nhập tên kênh")
     .max(120, "Tên kênh tối đa 120 ký tự"),
   platform: channelPlatformSchema,
+  company_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : null))
+    .refine(
+      (value) => value === null || z.string().uuid().safeParse(value).success,
+      "Công ty không hợp lệ"
+    ),
   handle: optionalText(120),
   url: z
     .string()
@@ -227,6 +236,46 @@ export const agentSchema = z.object({
     .max(200_000)
     .default(15000),
 });
+
+export const workflowStepSchema = z.object({
+  id: z.string().trim().min(1).max(60),
+  title: z.string().trim().min(1, "Nhập tên bước").max(200),
+  mode: z.enum(["text", "voice", "music", "note"]),
+  instruction: z
+    .string()
+    .trim()
+    .min(1, "Nhập hướng dẫn cho bước")
+    .max(4000),
+});
+
+export const agentSettingsSchema = z
+  .object({
+    id: z.string().uuid(),
+    company_id: z.string().uuid(),
+    system_prompt: z
+      .string()
+      .trim()
+      .max(8000)
+      .optional()
+      .transform((value) => (value ? value : null)),
+    workflow: z
+      .array(workflowStepSchema)
+      .min(1, "Cần ít nhất 1 bước")
+      .max(30, "Tối đa 30 bước"),
+  })
+  .superRefine((value, ctx) => {
+    const ids = new Set<string>();
+    value.workflow.forEach((step, index) => {
+      if (ids.has(step.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Mã bước bị trùng",
+          path: ["workflow", index, "id"],
+        });
+      }
+      ids.add(step.id);
+    });
+  });
 
 export const agentTaskSchema = z.object({
   company_id: z.string().uuid(),

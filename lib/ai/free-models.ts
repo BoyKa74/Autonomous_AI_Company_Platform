@@ -17,6 +17,11 @@ export const OPENCODE_FREE_MODELS: FreeModel[] = [
     use: "Phân tích, lập kế hoạch",
   },
   {
+    id: "nemotron-3-ultra-free",
+    label: "Nemotron 3 Ultra Free",
+    use: "Phân tích sâu, research",
+  },
+  {
     id: "nemotron-3.5-lightning-free",
     label: "Nemotron 3.5 Lightning Free",
     use: "Tác vụ nhanh, phân loại",
